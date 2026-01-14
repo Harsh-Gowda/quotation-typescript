@@ -3,8 +3,15 @@ import { GoogleGenAI } from "@google/genai";
 import { Quotation } from "../types";
 
 export const generateQuoteSummary = async (quote: Quotation): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
+  const fallbackSummary = "Thank you for choosing Magnific. Our premium range of fans and lights are designed to bring elegance and comfort to your home.";
+
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+
+  if (!apiKey || apiKey === "undefined") {
+    console.warn("Gemini API Key is missing. Using fallback summary.");
+    return fallbackSummary;
+  }
+
   const itemsList = quote.items
     .map(item => `- ${item.product.name} ${item.placeName ? `for ${item.placeName}` : ''} (Qty: ${item.quantity})`)
     .join('\n');
@@ -26,13 +33,15 @@ export const generateQuoteSummary = async (quote: Quotation): Promise<string> =>
   `;
 
   try {
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: prompt,
     });
-    return response.text || "Thank you for choosing Magnific. Our premium range of fans and lights are designed to bring elegance and comfort to your home.";
+    return response.text || fallbackSummary;
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "Thank you for choosing Magnific. We look forward to helping you illuminate and ventilate your space with our premium designer collection.";
+    return fallbackSummary;
   }
 };
+
