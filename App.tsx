@@ -34,6 +34,12 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCustomerView, setIsCustomerView] = useState(false);
 
+  // Filter states
+  const [categoryFilter, setCategoryFilter] = useState<string>('All');
+  const [colorFilter, setColorFilter] = useState<string>('All');
+  const [sizeFilter, setSizeFilter] = useState<string>('All');
+  const [finishingFilter, setFinishingFilter] = useState<string>('All');
+
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -126,9 +132,24 @@ export default function App() {
 
   const filteredProducts = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
-    if (!term) return MOCK_PRODUCTS;
-    return MOCK_PRODUCTS.filter(p => p.name.toLowerCase().includes(term) || p.description.toLowerCase().includes(term) || p.category.toLowerCase().includes(term));
-  }, [searchTerm]);
+    let filtered = MOCK_PRODUCTS;
+
+    // Apply search filter
+    if (term) {
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(term) ||
+        p.description.toLowerCase().includes(term) ||
+        p.category.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply category filter
+    if (categoryFilter !== 'All') {
+      filtered = filtered.filter(p => p.category === categoryFilter);
+    }
+
+    return filtered;
+  }, [searchTerm, categoryFilter]);
 
   const saveToLocal = (quote: Quotation) => {
     setSavedQuotes(prev => {
@@ -365,6 +386,95 @@ export default function App() {
                 <button onClick={() => setView('CUSTOMER_ENTRY')} className="text-indigo-600 hover:text-indigo-800 flex items-center text-sm font-bold">
                   <BackIcon /> <span className="ml-1">Registration</span>
                 </button>
+              </div>
+
+              {/* Filter Section */}
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* Category Filter */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Category</label>
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    >
+                      <option value="All">All Products</option>
+                      <option value="Fans">Fans</option>
+                      <option value="Lights">Lights</option>
+                    </select>
+                  </div>
+
+                  {/* Color Filter */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Color</label>
+                    <select
+                      value={colorFilter}
+                      onChange={(e) => setColorFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    >
+                      <option value="All">All Colors</option>
+                      <option value="White">White</option>
+                      <option value="Black">Black</option>
+                      <option value="Gold">Gold</option>
+                      <option value="Silver">Silver</option>
+                      <option value="Bronze">Bronze</option>
+                    </select>
+                  </div>
+
+                  {/* Size Filter */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Size</label>
+                    <select
+                      value={sizeFilter}
+                      onChange={(e) => setSizeFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    >
+                      <option value="All">All Sizes</option>
+                      <option value="24">24"</option>
+                      <option value="36">36"</option>
+                      <option value="48">48"</option>
+                      <option value="52">52"</option>
+                      <option value="60">60"</option>
+                    </select>
+                  </div>
+
+                  {/* Finishing Filter */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Finishing</label>
+                    <select
+                      value={finishingFilter}
+                      onChange={(e) => setFinishingFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    >
+                      <option value="All">All Finishes</option>
+                      <option value="Matte">Matte</option>
+                      <option value="Glossy">Glossy</option>
+                      <option value="Brushed">Brushed</option>
+                      <option value="Polished">Polished</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Clear All Filters Button */}
+                {(categoryFilter !== 'All' || colorFilter !== 'All' || sizeFilter !== 'All' || finishingFilter !== 'All') && (
+                  <div className="mt-3 pt-3 border-t border-slate-100">
+                    <button
+                      onClick={() => {
+                        setCategoryFilter('All');
+                        setColorFilter('All');
+                        setSizeFilter('All');
+                        setFinishingFilter('All');
+                      }}
+                      className="px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center space-x-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span>Clear All Filters</span>
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
