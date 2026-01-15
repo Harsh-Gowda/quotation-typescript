@@ -5,6 +5,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 'F1',
     name: 'Magnific Aura Smart Fan',
+    modelNumber: 'MAG-F1-2024',
     description: 'Ultra-silent BLDC motor with IoT integration and multi-color LED ring.',
     price: 12499,
     category: 'Fans',
@@ -16,6 +17,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 'F2',
     name: 'Magnific Aerostorm Ceiling Fan',
+    modelNumber: 'MAG-F2-XP',
     description: 'High-speed designer fan with aerodynamic blades for maximum air delivery.',
     price: 8999,
     category: 'Fans',
@@ -27,6 +29,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 'L1',
     name: 'Magnific Crystal Chandelier',
+    modelNumber: 'LC-CH-001',
     description: 'Exquisite multi-tier crystal lighting for luxury living spaces.',
     price: 45000,
     category: 'Lights',
@@ -38,6 +41,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 'L2',
     name: 'Magnific Pendant Profile Light',
+    modelNumber: 'LP-PL-50',
     description: 'Modern minimalistic profile lighting for offices and dining areas.',
     price: 15500,
     category: 'Lights',
@@ -49,6 +53,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 'L3',
     name: 'Magnific Smart Recessed Cob',
+    modelNumber: 'LR-COB-07',
     description: 'Tunable white and RGB spotlight for architectural highlighting.',
     price: 2450,
     category: 'Lights',
@@ -58,6 +63,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: 'F3',
     name: 'Magnific Wall Mounted Turbine',
+    modelNumber: 'FW-TB-22',
     description: 'Industrial grade high-flow fan for outdoor and large hall ventilation.',
     price: 11200,
     category: 'Fans',

@@ -10,6 +10,7 @@ export interface Customer {
 export interface Product {
   id: string;
   name: string;
+  modelNumber: string;
   description: string;
   price: number;
   category: string;
@@ -21,6 +22,10 @@ export interface QuoteItem {
   product: Product;
   quantity: number;
   placeName?: string;
+  size?: string;
+  color?: string;
+  lamp?: string;
+  discount?: number;
 }
 
 export interface Quotation {
@@ -31,6 +36,8 @@ export interface Quotation {
   taxRate: number;
   notes?: string;
   aiSummary?: string;
+  advanceAmount?: number;
+  advanceDate?: string;
 }
 
 export type ViewState = 'CUSTOMER_ENTRY' | 'PRODUCT_SELECTION' | 'PREVIEW' | 'SAVED_QUOTES';
