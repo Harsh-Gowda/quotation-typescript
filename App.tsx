@@ -34,11 +34,23 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCustomerView, setIsCustomerView] = useState(false);
 
-  // Filter states
-  const [categoryFilter, setCategoryFilter] = useState<string>('All');
-  const [colorFilter, setColorFilter] = useState<string>('All');
-  const [sizeFilter, setSizeFilter] = useState<string>('All');
-  const [finishingFilter, setFinishingFilter] = useState<string>('All');
+  // Multiple filter states
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [colorFilter, setColorFilter] = useState('All');
+  const [sizeFilter, setSizeFilter] = useState('All');
+  const [finishingFilter, setFinishingFilter] = useState('All');
+
+  // Dropdown open states
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isColorOpen, setIsColorOpen] = useState(false);
+  const [isSizeOpen, setIsSizeOpen] = useState(false);
+  const [isFinishingOpen, setIsFinishingOpen] = useState(false);
+
+  // Search states for each dropdown
+  const [categorySearch, setCategorySearch] = useState('');
+  const [colorSearch, setColorSearch] = useState('');
+  const [sizeSearch, setSizeSearch] = useState('');
+  const [finishingSearch, setFinishingSearch] = useState('');
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -148,8 +160,11 @@ export default function App() {
       filtered = filtered.filter(p => p.category === categoryFilter);
     }
 
+    // Note: Color, Size, and Finishing filters would work here if products had these properties
+    // For now, only category filter is functional
+
     return filtered;
-  }, [searchTerm, categoryFilter]);
+  }, [searchTerm, categoryFilter, colorFilter, sizeFilter, finishingFilter]);
 
   const saveToLocal = (quote: Quotation) => {
     setSavedQuotes(prev => {
@@ -388,105 +403,276 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Filter Section */}
+              {/* Combined Filter Section */}
               <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* Category Filter */}
+                <div className="space-y-4">
+                  {/* Search Bar */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Category</label>
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                    >
-                      <option value="All">All Products</option>
-                      <option value="Fans">Fans</option>
-                      <option value="Lights">Lights</option>
-                    </select>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Search Products</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <SearchIcon />
+                      </div>
+                      <input
+                        type="text"
+                        className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all font-medium"
+                        placeholder="Search by name, description..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
                   </div>
 
-                  {/* Color Filter */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Color</label>
-                    <select
-                      value={colorFilter}
-                      onChange={(e) => setColorFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                    >
-                      <option value="All">All Colors</option>
-                      <option value="White">White</option>
-                      <option value="Black">Black</option>
-                      <option value="Gold">Gold</option>
-                      <option value="Silver">Silver</option>
-                      <option value="Bronze">Bronze</option>
-                    </select>
-                  </div>
+                  {/* Multiple Searchable Filter Dropdowns */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                  {/* Size Filter */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Size</label>
-                    <select
-                      value={sizeFilter}
-                      onChange={(e) => setSizeFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                    >
-                      <option value="All">All Sizes</option>
-                      <option value="24">24"</option>
-                      <option value="36">36"</option>
-                      <option value="48">48"</option>
-                      <option value="52">52"</option>
-                      <option value="60">60"</option>
-                    </select>
-                  </div>
+                    {/* Category Filter Dropdown */}
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Category</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all flex items-center justify-between"
+                      >
+                        <span className="text-slate-700 truncate">{categoryFilter === 'All' ? 'All Products' : categoryFilter}</span>
+                        <svg className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isCategoryOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {isCategoryOpen && (
+                        <>
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                            <div className="p-2 border-b bg-slate-50">
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                value={categorySearch}
+                                onChange={(e) => setCategorySearch(e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-48 overflow-y-auto">
+                              {['All', 'Fans', 'Lights'].filter(opt => opt.toLowerCase().includes(categorySearch.toLowerCase())).map(option => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => {
+                                    setCategoryFilter(option);
+                                    setIsCategoryOpen(false);
+                                    setCategorySearch('');
+                                  }}
+                                  className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${categoryFilter === option ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                >
+                                  {option === 'All' ? 'All Products' : option}
+                                  {categoryFilter === option && <span className="float-right">✓</span>}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="fixed inset-0 z-40" onClick={() => { setIsCategoryOpen(false); setCategorySearch(''); }} />
+                        </>
+                      )}
+                    </div>
 
-                  {/* Finishing Filter */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Finishing</label>
-                    <select
-                      value={finishingFilter}
-                      onChange={(e) => setFinishingFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                    >
-                      <option value="All">All Finishes</option>
-                      <option value="Matte">Matte</option>
-                      <option value="Glossy">Glossy</option>
-                      <option value="Brushed">Brushed</option>
-                      <option value="Polished">Polished</option>
-                    </select>
+                    {/* Color Filter Dropdown */}
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Color</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsColorOpen(!isColorOpen)}
+                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all flex items-center justify-between"
+                      >
+                        <span className="text-slate-700 truncate">{colorFilter === 'All' ? 'All Colors' : colorFilter}</span>
+                        <svg className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isColorOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {isColorOpen && (
+                        <>
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                            <div className="p-2 border-b bg-slate-50">
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                value={colorSearch}
+                                onChange={(e) => setColorSearch(e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-48 overflow-y-auto">
+                              {['All', 'White', 'Black', 'Gold', 'Silver', 'Bronze'].filter(opt => opt.toLowerCase().includes(colorSearch.toLowerCase())).map(option => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => {
+                                    setColorFilter(option);
+                                    setIsColorOpen(false);
+                                    setColorSearch('');
+                                  }}
+                                  className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${colorFilter === option ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                >
+                                  {option === 'All' ? 'All Colors' : option}
+                                  {colorFilter === option && <span className="float-right">✓</span>}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="fixed inset-0 z-40" onClick={() => { setIsColorOpen(false); setColorSearch(''); }} />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Size Filter Dropdown */}
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Size</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsSizeOpen(!isSizeOpen)}
+                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all flex items-center justify-between"
+                      >
+                        <span className="text-slate-700 truncate">{sizeFilter === 'All' ? 'All Sizes' : `${sizeFilter}"`}</span>
+                        <svg className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isSizeOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {isSizeOpen && (
+                        <>
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                            <div className="p-2 border-b bg-slate-50">
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                value={sizeSearch}
+                                onChange={(e) => setSizeSearch(e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-48 overflow-y-auto">
+                              {['All', '24', '36', '48', '52', '60'].filter(opt => opt.toLowerCase().includes(sizeSearch.toLowerCase())).map(option => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => {
+                                    setSizeFilter(option);
+                                    setIsSizeOpen(false);
+                                    setSizeSearch('');
+                                  }}
+                                  className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${sizeFilter === option ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                >
+                                  {option === 'All' ? 'All Sizes' : `${option} Inch`}
+                                  {sizeFilter === option && <span className="float-right">✓</span>}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="fixed inset-0 z-40" onClick={() => { setIsSizeOpen(false); setSizeSearch(''); }} />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Finishing Filter Dropdown */}
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Finishing</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsFinishingOpen(!isFinishingOpen)}
+                        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all flex items-center justify-between"
+                      >
+                        <span className="text-slate-700 truncate">{finishingFilter === 'All' ? 'All Finishes' : finishingFilter}</span>
+                        <svg className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isFinishingOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {isFinishingOpen && (
+                        <>
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                            <div className="p-2 border-b bg-slate-50">
+                              <input
+                                type="text"
+                                placeholder="Search..."
+                                value={finishingSearch}
+                                onChange={(e) => setFinishingSearch(e.target.value)}
+                                className="w-full px-2 py-1.5 border border-slate-200 rounded text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-48 overflow-y-auto">
+                              {['All', 'Matte', 'Glossy', 'Brushed', 'Polished'].filter(opt => opt.toLowerCase().includes(finishingSearch.toLowerCase())).map(option => (
+                                <button
+                                  key={option}
+                                  type="button"
+                                  onClick={() => {
+                                    setFinishingFilter(option);
+                                    setIsFinishingOpen(false);
+                                    setFinishingSearch('');
+                                  }}
+                                  className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${finishingFilter === option ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                >
+                                  {option === 'All' ? 'All Finishes' : option}
+                                  {finishingFilter === option && <span className="float-right">✓</span>}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="fixed inset-0 z-40" onClick={() => { setIsFinishingOpen(false); setFinishingSearch(''); }} />
+                        </>
+                      )}
+                    </div>
+
                   </div>
                 </div>
 
-                {/* Clear All Filters Button */}
-                {(categoryFilter !== 'All' || colorFilter !== 'All' || sizeFilter !== 'All' || finishingFilter !== 'All') && (
-                  <div className="mt-3 pt-3 border-t border-slate-100">
+                {/* Active Filters Display */}
+                {(searchTerm || categoryFilter !== 'All' || colorFilter !== 'All' || sizeFilter !== 'All' || finishingFilter !== 'All') && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center space-x-2 flex-wrap gap-2">
+                      <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active:</span>
+                      {searchTerm && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                          🔍 "{searchTerm}"
+                        </span>
+                      )}
+                      {categoryFilter !== 'All' && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                          📂 {categoryFilter}
+                        </span>
+                      )}
+                      {colorFilter !== 'All' && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                          🎨 {colorFilter}
+                        </span>
+                      )}
+                      {sizeFilter !== 'All' && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                          📏 {sizeFilter}"
+                        </span>
+                      )}
+                      {finishingFilter !== 'All' && (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                          ✨ {finishingFilter}
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={() => {
                         setCategoryFilter('All');
                         setColorFilter('All');
                         setSizeFilter('All');
                         setFinishingFilter('All');
+                        setSearchTerm('');
                       }}
-                      className="px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center space-x-1"
+                      className="px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-all flex items-center space-x-1"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                      <span>Clear All Filters</span>
+                      <span>Clear All</span>
                     </button>
                   </div>
                 )}
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <SearchIcon />
-                </div>
-                <input
-                  type="text"
-                  className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all shadow-sm font-medium"
-                  placeholder="Search fans and lights..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {filteredProducts.map(p => (
@@ -836,7 +1022,7 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
           </div>
         </div>
         <div className="text-right text-[10px] font-bold text-slate-900 space-y-0.5">
-          <p>Estimate.No: {quote.id}</p>
+          <p>Quatation.No: {quote.id}</p>
           <p>Date: {quote.date}</p>
         </div>
       </div>
@@ -964,13 +1150,13 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
         )}
       </table>
 
-      {!isCustomerView && (
+      {/* {!isCustomerView && (
         <div className="mb-8">
           <p className="text-[10px] text-slate-500 italic leading-tight">
-            * This is a tentative quote. Final GST (12% or 18% as applicable) and actual transport will be added manually at the time of final invoice.
+            * This is a tentative quote. Final GST 18% as applicable and actual transport will be added manually at the time of final invoice.
           </p>
         </div>
-      )}
+      )} */}
 
       <div className="mt-12 pt-8 border-t border-slate-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -1048,7 +1234,7 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
         </div>
 
         <div className="mt-12 text-center pt-8 border-t border-slate-100">
-          <p className="font-bold text-indigo-700 uppercase tracking-[0.4em] text-[10px]">Experience Luxury • Magnific Studio • Koramangala</p>
+          <p className="font-bold text-indigo-700 uppercase tracking-[0.4em] text-[10px]">Experience Luxury • Magnific Designer Fans and Lights • Koramangala</p>
         </div>
       </div>
     </>
