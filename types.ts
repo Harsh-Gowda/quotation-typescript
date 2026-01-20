@@ -38,6 +38,9 @@ export interface Quotation {
   aiSummary?: string;
   advanceAmount?: number;
   advanceDate?: string;
+  manualRoundOff?: number;
+  globalDiscountType?: 'flat' | 'percentage';
+  globalDiscountValue?: number;
 }
 
 export type ViewState = 'CUSTOMER_ENTRY' | 'PRODUCT_SELECTION' | 'PREVIEW' | 'SAVED_QUOTES';

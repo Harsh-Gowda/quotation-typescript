@@ -16,6 +16,11 @@
         }
 
         @media print {
+            @page {
+                margin: 0;
+                size: auto;
+            }
+
             .no-print {
                 display: none !important;
             }
@@ -26,6 +31,18 @@
 
             body {
                 background-color: white;
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Ensure main container takes full width */
+            #root,
+            main {
+                width: 100%;
+                margin: 0;
+                padding: 0;
             }
         }
 

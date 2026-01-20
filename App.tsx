@@ -33,6 +33,10 @@ export default function App() {
   const [isSaved, setIsSaved] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCustomerView, setIsCustomerView] = useState(false);
+  const [isPublicMode, setIsPublicMode] = useState(false);
+  // const [manualRoundOff, setManualRoundOff] = useState<number | null>(null);
+  const [discountType, setDiscountType] = useState<'flat' | 'percentage' | null>(null);
+  const [discountValue, setDiscountValue] = useState<number>(0);
 
   // Multiple filter states
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -61,6 +65,12 @@ export default function App() {
     // Handle QR Data / Share Link
     const params = new URLSearchParams(window.location.search);
     const data = params.get('data');
+    const viewMode = params.get('view');
+
+    if (viewMode === 'customer') {
+      setIsPublicMode(true);
+    }
+
     if (data) {
       try {
         const decoded = JSON.parse(decodeURIComponent(escape(atob(data))));
@@ -188,7 +198,10 @@ export default function App() {
       date: new Date().toLocaleDateString('en-IN'),
       taxRate: 0.18,
       advanceAmount: customer.advanceAmount,
-      advanceDate: customer.advanceDate
+      advanceDate: customer.advanceDate,
+      // manualRoundOff: manualRoundOff || undefined
+      globalDiscountType: discountType || undefined,
+      globalDiscountValue: discountValue > 0 ? discountValue : undefined
     };
 
     const minimalQuote = {
@@ -207,6 +220,12 @@ export default function App() {
     try {
       const summary = await generateQuoteSummary(quote);
       const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(minimalQuote))));
+
+      // Warning for localhost
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        alert("⚠️ WARNING: You are generating a QR code on 'localhost'.\n\nThis QR code will NOT work on other devices (like your phone).\n\nPlease open this app using your Network IP (e.g., 192.168.x.x) if you want the QR code to be scannable.");
+      }
+
       const shareUrl = `${window.location.origin}${window.location.pathname}?data=${encodedData}&view=customer`;
       const qr = await QRCode.toDataURL(shareUrl, { width: 140, margin: 1 });
 
@@ -225,6 +244,8 @@ export default function App() {
     setQrCodeUrl(null);
     setShareUrl(null);
     setSearchTerm('');
+    setDiscountType(null);
+    setDiscountValue(0);
     setView('CUSTOMER_ENTRY');
   };
 
@@ -233,7 +254,7 @@ export default function App() {
     const data = [
       ["Magnific Quotation"], ["ID", finalQuote.id], ["Date", finalQuote.date], ["Office", OFFICE_ADDRESS], [""],
       ["Customer"], ["Name", finalQuote.customer.name], ["Company", finalQuote.customer.company || ""], ["Email", finalQuote.customer.email], ["Phone", finalQuote.customer.phone], ["Address", finalQuote.customer.address], [""],
-      ["Items"], ["S.No", "Model No", "Product", "Size", "Color", "Lamp", "Area", "Qty", "Unit Price", "Discount", "Net Price", "Total"],
+      ["Items"], ["S.No", "Model No", "Product", "Size", "Color", "Lamp", "Area", "Qty", "Unit Price", "Total"],
       ...finalQuote.items.map((i, idx) => [
         idx + 1,
         i.product.modelNumber,
@@ -244,11 +265,21 @@ export default function App() {
         i.placeName || "N/A",
         i.quantity,
         i.product.price,
-        i.discount || 0,
-        i.product.price - (i.discount || 0),
         (i.product.price - (i.discount || 0)) * i.quantity
       ]),
-      [""], ["", "", "", "", "", "", "", "", "", "", "Net Total", subtotal]
+      [""],
+      [""],
+      ["", "", "", "", "", "", "", "", "", "", "Gross Total", totalPrice(finalQuote.items)],
+      ...(finalQuote.globalDiscountType ? [[
+        "", "", "", "", "", "", "", "", "", "",
+        `Discount (${finalQuote.globalDiscountType === 'flat' ? 'Flat' : finalQuote.globalDiscountValue + '%'})`,
+        finalQuote.globalDiscountType === 'flat'
+          ? -(finalQuote.globalDiscountValue || 0)
+          : -Math.round(totalPrice(finalQuote.items) * (finalQuote.globalDiscountValue || 0) / 100)
+      ]] : []),
+      ["", "", "", "", "", "", "", "", "", "", "Net Total", totalPrice(finalQuote.items) - (finalQuote.globalDiscountType === 'flat' ? (finalQuote.globalDiscountValue || 0) : Math.round(totalPrice(finalQuote.items) * (finalQuote.globalDiscountValue || 0) / 100))],
+      ["", "", "", "", "", "", "", "", "", "", "GST @18%", Math.round((totalPrice(finalQuote.items) - (finalQuote.globalDiscountType === 'flat' ? (finalQuote.globalDiscountValue || 0) : Math.round(totalPrice(finalQuote.items) * (finalQuote.globalDiscountValue || 0) / 100))) * 0.18)],
+      ["", "", "", "", "", "", "", "", "", "", "Grand Total", Math.round((totalPrice(finalQuote.items) - (finalQuote.globalDiscountType === 'flat' ? (finalQuote.globalDiscountValue || 0) : Math.round(totalPrice(finalQuote.items) * (finalQuote.globalDiscountValue || 0) / 100))) * 1.18)]
     ];
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -273,19 +304,21 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       {/* Navbar */}
-      <nav className="bg-indigo-700 text-white shadow-md no-print sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setView('CUSTOMER_ENTRY')}>
-            <span className="text-xl font-bold tracking-tight uppercase">Magnific</span>
+      {!isPublicMode && (
+        <nav className="bg-indigo-700 text-white shadow-md no-print sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
+            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setView('CUSTOMER_ENTRY')}>
+              <span className="text-xl font-bold tracking-tight uppercase">Magnific</span>
+            </div>
+            <button
+              onClick={() => setView('SAVED_QUOTES')}
+              className="flex items-center space-x-1 px-3 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors text-sm font-medium"
+            >
+              <HistoryIcon /> <span>Saved Quotes</span>
+            </button>
           </div>
-          <button
-            onClick={() => setView('SAVED_QUOTES')}
-            className="flex items-center space-x-1 px-3 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors text-sm font-medium"
-          >
-            <HistoryIcon /> <span>Saved Quotes</span>
-          </button>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 py-8">
 
@@ -350,7 +383,7 @@ export default function App() {
                   <h3 className="text-lg font-bold text-slate-800">New Quotation</h3>
                 </div>
                 <p className="text-sm text-slate-500 leading-relaxed font-medium">
-                  Welcome to the Magnific Designer Studio. Please provide the visitor information to begin generating a professional quotation.
+                  Welcome to the Magnific Designer Fans&Lights. Please provide the visitor information to begin generating a professional quotation.
                 </p>
                 <div className="space-y-4 pt-4 border-t">
                   <div className="flex items-start space-x-3">
@@ -383,9 +416,9 @@ export default function App() {
                 </div>
                 <div className="pt-6 border-t font-mono">
                   <div className="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">
-                    <span>Studio Location</span>
+                    <span>Office Location</span>
                   </div>
-                  <p className="text-[11px] text-slate-600 font-bold">Magnific Studio • Koramangala</p>
+                  <p className="text-[11px] text-slate-600 font-bold">Magnific Fans & Lights • Koramangala</p>
                 </div>
               </div>
             </div>
@@ -633,26 +666,41 @@ export default function App() {
                       {searchTerm && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
                           🔍 "{searchTerm}"
+                          <button onClick={() => setSearchTerm('')} className="ml-1.5 text-indigo-500 hover:text-indigo-800 focus:outline-none">
+                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                          </button>
                         </span>
                       )}
                       {categoryFilter !== 'All' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
                           📂 {categoryFilter}
+                          <button onClick={() => setCategoryFilter('All')} className="ml-1.5 text-indigo-500 hover:text-indigo-800 focus:outline-none">
+                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                          </button>
                         </span>
                       )}
                       {colorFilter !== 'All' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
                           🎨 {colorFilter}
+                          <button onClick={() => setColorFilter('All')} className="ml-1.5 text-indigo-500 hover:text-indigo-800 focus:outline-none">
+                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                          </button>
                         </span>
                       )}
                       {sizeFilter !== 'All' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
                           📏 {sizeFilter}"
+                          <button onClick={() => setSizeFilter('All')} className="ml-1.5 text-indigo-500 hover:text-indigo-800 focus:outline-none">
+                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                          </button>
                         </span>
                       )}
                       {finishingFilter !== 'All' && (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
                           ✨ {finishingFilter}
+                          <button onClick={() => setFinishingFilter('All')} className="ml-1.5 text-indigo-500 hover:text-indigo-800 focus:outline-none">
+                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                          </button>
                         </span>
                       )}
                     </div>
@@ -725,6 +773,59 @@ export default function App() {
                       <span>Subtotal</span>
                       <span>₹{subtotal.toLocaleString('en-IN')}</span>
                     </div>
+
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Global Discount</label>
+
+                      {/* Toggles */}
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setDiscountType(discountType === 'flat' ? null : 'flat')}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'flat' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
+                        >
+                          Flat (₹)
+                        </button>
+                        <button
+                          onClick={() => setDiscountType(discountType === 'percentage' ? null : 'percentage')}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'percentage' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
+                        >
+                          Percentage (%)
+                        </button>
+                      </div>
+
+                      {/* Input */}
+                      {discountType && (
+                        <div className="flex items-center space-x-2 bg-white px-3 py-2 border rounded-md focus-within:ring-2 ring-indigo-500/20 ring-offset-1">
+                          <span className="text-slate-400 font-bold">{discountType === 'flat' ? '₹' : '%'}</span>
+                          <input
+                            type="number"
+                            className="w-full bg-transparent outline-none font-bold text-slate-900 placeholder-slate-300"
+                            placeholder={discountType === 'flat' ? "Enter amount" : "Enter percentage"}
+                            value={discountValue || ''}
+                            onChange={(e) => setDiscountValue(Number(e.target.value))}
+                          />
+                        </div>
+                      )}
+
+                      {/* Summary Preview */}
+                      {discountType && discountValue > 0 && (
+                        <div className="pt-2 border-t border-slate-200 space-y-1 text-xs">
+                          <div className="flex justify-between text-slate-500">
+                            <span>Subtotal:</span>
+                            <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between text-red-500 font-medium">
+                            <span>Discount:</span>
+                            <span>-₹{(discountType === 'flat' ? discountValue : Math.round(subtotal * discountValue / 100)).toLocaleString('en-IN')}</span>
+                          </div>
+                          <div className="flex justify-between font-bold text-slate-900 pt-1">
+                            <span>New Net Total:</span>
+                            <span>₹{(subtotal - (discountType === 'flat' ? discountValue : Math.round(subtotal * discountValue / 100))).toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <p className="text-[10px] text-slate-400 italic text-center">* GST to be calculated manually</p>
                     <button
                       onClick={handleCreateQuotation}
@@ -777,28 +878,31 @@ export default function App() {
         {/* Preview View */}
         {view === 'PREVIEW' && finalQuote && (
           <div className="max-w-4xl mx-auto">
-            <div className="flex flex-wrap justify-between items-center gap-3 mb-6 no-print">
-              <button onClick={() => setView('PRODUCT_SELECTION')} className="text-slate-600 hover:text-indigo-700 flex items-center font-bold bg-white px-4 py-2 rounded-lg border shadow-sm">
-                <BackIcon /> <span className="ml-1">Edit Selection</span>
-              </button>
-              <div className="flex space-x-2">
-                <button onClick={() => saveToLocal(finalQuote)} className={`${isSaved ? 'bg-green-600 text-white' : 'bg-white border text-slate-700 hover:bg-slate-50'} px-4 py-2 rounded-lg shadow-sm font-bold flex items-center transition-all`}>
-                  <SaveIcon /> {isSaved ? 'Saved' : 'Save'}
+            {/* Action Buttons */}
+            {!isPublicMode && (
+              <div className="flex flex-wrap justify-between items-center gap-3 mb-6 no-print">
+                <button onClick={() => setView('PRODUCT_SELECTION')} className="text-slate-600 hover:text-indigo-700 flex items-center font-bold bg-white px-4 py-2 rounded-lg border shadow-sm">
+                  <BackIcon /> <span className="ml-1">Edit Selection</span>
                 </button>
-                <button onClick={handleExportExcel} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg shadow-sm font-bold flex items-center">
-                  <ExcelIcon /> Excel
-                </button>
-                <button onClick={() => window.print()} className="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg shadow-sm font-bold flex items-center">
-                  Print
-                </button>
-                <button onClick={handleNewQuote} className="bg-slate-800 hover:bg-black text-white px-4 py-2 rounded-lg font-bold">
-                  New Quote
-                </button>
+                <div className="flex space-x-2">
+                  <button onClick={() => saveToLocal(finalQuote)} className={`${isSaved ? 'bg-green-600 text-white' : 'bg-white border text-slate-700 hover:bg-slate-50'} px-4 py-2 rounded-lg shadow-sm font-bold flex items-center transition-all`}>
+                    <SaveIcon /> {isSaved ? 'Saved' : 'Save'}
+                  </button>
+                  <button onClick={handleExportExcel} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg shadow-sm font-bold flex items-center">
+                    <ExcelIcon /> Excel
+                  </button>
+                  <button onClick={() => window.print()} className="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg shadow-sm font-bold flex items-center">
+                    Print
+                  </button>
+                  <button onClick={handleNewQuote} className="bg-slate-800 hover:bg-black text-white px-4 py-2 rounded-lg font-bold">
+                    New Quote
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Quote Sheet */}
-            <div className="bg-white rounded-xl shadow-xl p-10 print:shadow-none print:p-0 border border-slate-100 print:border-none">
+            <div className="bg-white rounded-xl shadow-xl overflow-hidden print:shadow-none border border-slate-100 print:border-none">
               <QuotationSheet quote={finalQuote} subtotal={subtotal} qrCodeUrl={qrCodeUrl} shareUrl={shareUrl} isCustomerView={isCustomerView} />
             </div>
           </div>
@@ -809,12 +913,11 @@ export default function App() {
   );
 }
 
-function ProductModal({ product, onClose, onAdd }: { product: Product, onClose: () => void, onAdd: (options: { placeName: string, size: string, color: string, lamp: string, discount: number }) => void }) {
+function ProductModal({ product, onClose, onAdd }: { product: Product, onClose: () => void, onAdd: (options: { placeName: string, size: string, color: string, lamp: string }) => void }) {
   const [place, setPlace] = useState('');
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
   const [lamp, setLamp] = useState('');
-  const [discount, setDiscount] = useState<string>('');
   const [activeImg, setActiveImg] = useState(product.image);
   const gallery = [product.image, ...(product.gallery || [])];
 
@@ -894,16 +997,6 @@ function ProductModal({ product, onClose, onAdd }: { product: Product, onClose: 
                   onChange={e => setLamp(e.target.value)}
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Discount (₹)</label>
-                <input
-                  type="number"
-                  placeholder="Ex: 500"
-                  className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium text-sm transition-all"
-                  value={discount}
-                  onChange={e => setDiscount(e.target.value)}
-                />
-              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -924,7 +1017,7 @@ function ProductModal({ product, onClose, onAdd }: { product: Product, onClose: 
               <span className="text-2xl font-bold text-indigo-700">₹{product.price.toLocaleString('en-IN')}</span>
             </div>
             <button
-              onClick={() => onAdd({ placeName: place, size, color, lamp, discount: Number(discount) || 0 })}
+              onClick={() => onAdd({ placeName: place, size, color, lamp, discount: 0 })}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center"
             >
               <CartIcon /> <span className="ml-2">Add to Quotation</span>
@@ -1002,155 +1095,297 @@ function CartItem({ item, onRemove, onQtyChange }: { item: QuoteItem, onRemove: 
 
 function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }: { quote: Quotation, subtotal: number, qrCodeUrl?: string | null, shareUrl?: string | null, isCustomerView?: boolean }) {
   return (
-    <>
-      <div className="flex justify-between items-end border-b-2 border-slate-900 pb-4 mb-2">
-        <div>
-          <div className="mb-2">
-            <img src="./assets/magnific-web.png" alt="website logo" className="w-[100px] font-black text-indigo-600 tracking-tighter italic mb-4" />
-            <div className="flex items-center space-x-2 mt-[-4px]">
-
-              <div className="h-[1px] bg-slate-400 flex-1"></div>
-
-              <span className="text-[7px] font-bold text-slate-500 uppercase tracking-[0.2em] whitespace-nowrap">Designer Fans — Luxury Premium Lighting</span>
-              <div className="h-[1px] bg-slate-400 flex-1"></div>
-            </div>
-          </div>
-          <div className="text-[9px] text-slate-800 font-medium leading-tight">
-            <p>No. 42/1, 2nd Floor, I-Towers, 100ft Intermediate Ring Road</p>
-            <p>(Near Royal Oak), Koramangala, Bengaluru - 560047</p>
-            <p>Tel: +91 80413 27081, +91 78928 27670 E: info@magnific.in</p>
-          </div>
-        </div>
-        <div className="text-right text-[10px] font-bold text-slate-900 space-y-0.5">
-          <p>Quatation.No: {quote.id}</p>
-          <p>Date: {quote.date}</p>
-        </div>
+    <div className="flex flex-col min-h-full">
+      {/* Top Banner */}
+      <div className="w-full bg-[#004aad] text-white text-center py-2 font-bold tracking-[0.2em] uppercase text-sm print:text-xs print:py-1.5">
+        Quotation
       </div>
 
-      {!isCustomerView && (
-        <div className="mb-6 text-[11px]">
-          <div className="flex space-x-1">
-            <span className="font-bold w-12 text-slate-900 whitespace-nowrap">To:</span>
-            <span className="font-bold text-slate-800 uppercase">{quote.customer.name}</span>
+      <div className="p-10 print:p-8 flex-1">
+        <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-2">
+          <div>
+            <div className="mb-2">
+              <img src="./assets/magnific-web.png" alt="website logo" className="w-[100px] font-black text-indigo-600 tracking-tighter italic mb-4" />
+              <div className="flex items-center space-x-2 mt-[-4px]">
+
+                <div className="h-[1px] bg-slate-400 flex-1"></div>
+
+                <span className="text-[7px] font-bold text-slate-500 uppercase tracking-[0.2em] whitespace-nowrap">Designer Fans — Luxury Premium Lighting</span>
+                <div className="h-[1px] bg-slate-400 flex-1"></div>
+              </div>
+            </div>
+            <div className="text-[9px] text-slate-800 font-medium leading-tight">
+              <p>No. 42/1, 2nd Floor, I-Towers, 100ft Intermediate Ring Road</p>
+              <p>(Near Royal Oak), Koramangala, Bengaluru - 560047</p>
+              <p>Tel: +91 80413 27081, +91 78928 27670 E: info@magnific.in</p>
+            </div>
           </div>
-          <div className="flex space-x-1">
-            <span className="font-bold w-12 text-slate-900 whitespace-nowrap">Phone:</span>
-            <span className="font-medium text-slate-700">{quote.customer.phone}</span>
+          <div className="text-right text-[10px] font-bold text-slate-900 space-y-0.5">
+            <p>Quatation.No: {quote.id}</p>
+            <p>Date: {quote.date}</p>
           </div>
         </div>
-      )}
+
+        {!isCustomerView && (
+          <div className="mb-6 text-[12px]">
+            <div className="flex space-x-1">
+              <span className="font-bold w-12 text-slate-900 whitespace-nowrap">To:</span>
+              <span className="font-bold text-slate-800 uppercase">{quote.customer.name}</span>
+            </div>
+            <div className="flex space-x-1">
+              <span className="font-bold w-12 text-slate-900 whitespace-nowrap">Phone:</span>
+              <span className="font-medium text-slate-700">{quote.customer.phone}</span>
+            </div>
+          </div>
+        )}
 
 
-      <table className="w-full mb-8 border-[1.5px] border-slate-900 border-collapse table-fixed">
-        <thead>
-          <tr className="bg-slate-200/80 border-[1.5px] border-slate-900">
-            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[6%]">S.NO.</th>
-            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[20%]">MODEL & IMAGE</th>
-            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[24%]">TECHNICAL DETAILS</th>}
-            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[7%]">QTY</th>
-            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[13%]">AREA</th>}
-            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[10%]">PRICE</th>
-            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[10%]">AFTER DISCOUNT</th>}
-            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[10%]">TOTAL</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {quote.items.map((i, idx) => (
-            <tr key={idx} className="border-[1.5px] border-slate-900">
-              <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-bold text-slate-900">{idx + 1}</td>
-              <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center">
-                <div className="flex flex-col items-center justify-center space-y-2">
-                  <img src={i.product.image} className="w-24 h-24 object-contain" alt={i.product.name} />
-                  <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{i.product.modelNumber}</span>
-                  {isCustomerView && <span className="text-[11px] font-bold text-slate-700">{i.product.name}</span>}
-                </div>
-              </td>
-              {!isCustomerView && (
-                <td className="border-[1.5px] border-slate-900 py-4 px-4 text-left align-middle">
-                  <div className="flex flex-col space-y-1.5 text-[12px]">
-                    {i.size && (
-                      <div className="flex justify-between border-b border-slate-100 pb-0.5">
-                        <span className="font-bold text-slate-500 uppercase tracking-tighter w-14 flex-shrink-0">Size:</span>
-                        <span className="font-black text-slate-900 text-right">{i.size}</span>
-                      </div>
-                    )}
-                    {i.lamp && (
-                      <div className="flex justify-between border-b border-slate-100 pb-0.5">
-                        <span className="font-bold text-slate-500 uppercase tracking-tighter w-14 flex-shrink-0">Lamp:</span>
-                        <span className="font-black text-slate-900 text-right">{i.lamp}</span>
-                      </div>
-                    )}
-                    {i.color && (
-                      <div className="flex justify-between border-b border-slate-100 pb-0.5">
-                        <span className="font-bold text-slate-500 uppercase tracking-tighter w-14 flex-shrink-0">Finish:</span>
-                        <span className="font-black text-indigo-700 text-right">{i.color}</span>
-                      </div>
-                    )}
+        {/* Desktop Table View */}
+        <table className="w-full mb-8 border-[1.5px] border-slate-900 border-collapse table-fixed hidden md:table">
+          <thead>
+            <tr className="bg-slate-200/80 border-[1.5px] border-slate-900">
+              <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[6%]">S.NO.</th>
+              <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[30%]">MODEL & IMAGE</th>
+              {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[14%]">TECHNICAL DETAILS</th>}
+              <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[7%]">QTY</th>
+              {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[13%]">AREA</th>}
+              <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[10%]">PRICE</th>
+              {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[10%]">TOTAL</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {quote.items.map((i, idx) => (
+              <tr key={idx} className="border-[1.5px] border-slate-900">
+                <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-bold text-slate-900">{idx + 1}</td>
+                <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <img src={i.product.image} className="w-24 h-24 object-contain" alt={i.product.name} />
+                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{i.product.modelNumber}</span>
+                    {isCustomerView && <span className="text-[11px] font-bold text-slate-700">{i.product.name}</span>}
                   </div>
                 </td>
-              )}
-              <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-bold text-slate-900">{i.quantity}</td>
-              {!isCustomerView && (
-                <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[11px] font-bold text-slate-900 leading-tight">
-                  {i.placeName || '-'}
-                </td>
-              )}
-              <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-bold text-slate-900">
-                {i.product.price.toLocaleString('en-IN')}
-              </td>
-              {!isCustomerView && (
-                <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-black text-slate-900">
-                  {(i.product.price - (i.discount || 0)).toLocaleString('en-IN')}
-                </td>
-              )}
-              {!isCustomerView && (
-                <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-black text-slate-900">
-                  {((i.product.price - (i.discount || 0)) * i.quantity).toLocaleString('en-IN')}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-        {!isCustomerView && (
-          <tfoot>
-            <tr>
-              <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Gross Total</td>
-              <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{totalPrice(quote.items).toLocaleString('en-IN')}</td>
-            </tr>
-            <tr>
-              <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
-              <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{Math.round(totalPrice(quote.items) * 0.18).toLocaleString('en-IN')}</td>
-            </tr>
-            <tr>
-              <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Total</td>
-              <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{Math.round(totalPrice(quote.items) * 1.18).toLocaleString('en-IN')}</td>
-            </tr>
-            <tr>
-              <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Total ( Round Off )</td>
-              <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{Math.round(totalPrice(quote.items) * 1.18).toLocaleString('en-IN')}</td>
-            </tr>
-            {quote.advanceAmount ? (
-              <>
-                <tr>
-                  <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Advance ({quote.advanceDate || 'N/A'})</td>
-                  <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{quote.advanceAmount.toLocaleString('en-IN')}</td>
-                </tr>
-                <tr>
-                  <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Amount Paid</td>
-                  <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[14px] font-black text-indigo-700 bg-slate-100 leading-none">₹{(Math.round(totalPrice(quote.items) * 1.18) - quote.advanceAmount).toLocaleString('en-IN')}</td>
-                </tr>
-              </>
-            ) : (
-              <tr>
-                <td colSpan={7} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Grand Total</td>
-                <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[14px] font-black text-indigo-700 bg-slate-100 leading-none">₹{Math.round(totalPrice(quote.items) * 1.18).toLocaleString('en-IN')}</td>
-              </tr>
-            )}
-          </tfoot>
-        )}
-      </table>
 
-      {/* {!isCustomerView && (
+                {!isCustomerView && (
+                  <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center align-middle">
+                    <div className="flex flex-col items-center justify-center space-y-1 w-full">
+                      {i.size && (
+                        <div className="text-[10px] flex items-center space-x-1">
+                          <span className="font-bold text-slate-500 uppercase">Size:</span>
+                          <span className="font-bold text-slate-900">{i.size}</span>
+                        </div>
+                      )}
+                      {i.lamp && (
+                        <div className="text-[10px] flex items-center space-x-1">
+                          <span className="font-bold text-slate-500 uppercase">Lamp:</span>
+                          <span className="font-bold text-slate-900">{i.lamp}</span>
+                        </div>
+                      )}
+                      {i.color && (
+                        <div className="text-[10px] flex items-center space-x-1">
+                          <span className="font-bold text-slate-500 uppercase">Finish:</span>
+                          <span className="font-bold text-indigo-700">{i.color}</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                )}
+
+                <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-bold text-slate-900">{i.quantity}</td>
+
+                {!isCustomerView && (
+                  <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[11px] font-bold text-slate-900 leading-tight">
+                    {i.placeName || '-'}
+                  </td>
+                )}
+
+                <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-bold text-slate-900">
+                  {i.product.price.toLocaleString('en-IN')}
+                </td>
+
+                {!isCustomerView && (
+                  <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-black text-slate-900">
+                    {((i.product.price - (i.discount || 0)) * i.quantity).toLocaleString('en-IN')}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+          {!isCustomerView && (
+            <tfoot>
+              <tr>
+                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Gross Total</td>
+                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{totalPrice(quote.items).toLocaleString('en-IN')}</td>
+              </tr>
+
+              {quote.globalDiscountType && (
+                <tr>
+                  <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-red-600 uppercase leading-none">
+                    Discount ({quote.globalDiscountType === 'flat' ? 'Flat' : `${quote.globalDiscountValue}%`})
+                  </td>
+                  <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-red-600 leading-none">
+                    -{(quote.globalDiscountType === 'flat'
+                      ? (quote.globalDiscountValue || 0)
+                      : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100)
+                    ).toLocaleString('en-IN')}
+                  </td>
+                </tr>
+              )}
+
+              <tr>
+                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Net Total</td>
+                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
+                  {(totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))).toLocaleString('en-IN')}
+                </td>
+              </tr>
+
+              <tr>
+                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
+                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
+                  {Math.round((totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))) * 0.18).toLocaleString('en-IN')}
+                </td>
+              </tr>
+              {quote.advanceAmount ? (
+                <>
+                  <tr>
+                    <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Advance ({quote.advanceDate || 'N/A'})</td>
+                    <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{quote.advanceAmount.toLocaleString('en-IN')}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Amount Paid</td>
+                    <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[14px] font-black text-indigo-700 bg-slate-100 leading-none">
+                      ₹{Math.round((totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))) * 1.18 - quote.advanceAmount).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                </>
+              ) : (
+                <tr>
+                  <td colSpan={7} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Grand Total</td>
+                  <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[14px] font-black text-indigo-700 bg-slate-100 leading-none">
+                    ₹{Math.round((totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))) * 1.18).toLocaleString('en-IN')}
+                  </td>
+                </tr>
+              )}
+            </tfoot>
+          )}
+        </table>
+
+        {/* Mobile Card View (Hidden on Desktop) */}
+        <div className="md:hidden space-y-6 mb-8">
+          {quote.items.map((i, idx) => (
+            <div key={idx} className="bg-white border rounded-xl shadow-sm overflow-hidden">
+              <div className="flex p-4 gap-4">
+                {/* Image */}
+                <div className="w-24 h-24 flex-shrink-0 bg-slate-50 rounded-lg flex items-center justify-center p-2 border">
+                  <img src={i.product.image} className="w-full h-full object-contain" alt={i.product.name} />
+                </div>
+                {/* Header Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded uppercase tracking-wider">{i.product.modelNumber}</span>
+                    <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-sm mt-1 leading-tight">{i.product.name}</h4>
+
+                  {!isCustomerView && (
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                      {i.size && (
+                        <div><span className="text-slate-400 font-bold">Size:</span> <span className="font-bold">{i.size}</span></div>
+                      )}
+                      {i.color && (
+                        <div><span className="text-slate-400 font-bold">Color:</span> <span className="font-bold">{i.color}</span></div>
+                      )}
+                      {i.lamp && (
+                        <div className="col-span-2"><span className="text-slate-400 font-bold">Lamp:</span> <span className="font-bold">{i.lamp}</span></div>
+                      )}
+                      {i.placeName && (
+                        <div className="col-span-2 border-t pt-1 mt-1 text-slate-500 italic">{i.placeName}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Pricing Footer */}
+              <div className="bg-slate-50 px-4 py-3 border-t flex justify-between items-center text-xs">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Qty: {i.quantity}</span>
+                  <span className="font-medium text-slate-500 line-through text-[10px]">₹{i.product.price.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  {!isCustomerView && i.discount ? (
+                    <>
+                      <span className="text-[10px] text-green-600 font-bold">-{i.discount} Off</span>
+                      <span className="font-black text-indigo-700 text-base">₹{((i.product.price - (i.discount || 0)) * i.quantity).toLocaleString('en-IN')}</span>
+                    </>
+                  ) : (
+                    <span className="font-black text-indigo-700 text-base">₹{(i.product.price * i.quantity).toLocaleString('en-IN')}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Mobile Totals */}
+          {!isCustomerView && (
+            <div className="bg-slate-800 text-white rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Gross Total</span>
+                <span className="font-bold">{totalPrice(quote.items).toLocaleString('en-IN')}</span>
+              </div>
+
+              {quote.globalDiscountType && (
+                <div className="flex justify-between text-red-400">
+                  <span>Discount ({quote.globalDiscountType === 'flat' ? 'Flat' : `${quote.globalDiscountValue}%`})</span>
+                  <span className="font-bold">
+                    -{(quote.globalDiscountType === 'flat'
+                      ? (quote.globalDiscountValue || 0)
+                      : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100)
+                    ).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              )}
+
+              {quote.globalDiscountType && (
+                <div className="flex justify-between border-t border-slate-700 pt-2">
+                  <span className="text-slate-300">Net Total</span>
+                  <span className="font-bold">
+                    {(totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-between">
+                <span className="text-slate-400">GST @18%</span>
+                <span className="font-bold">
+                  {Math.round((totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))) * 0.18).toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              {quote.advanceAmount ? (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Advance ({quote.advanceDate || 'N/A'})</span>
+                    <span className="font-bold">{quote.advanceAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
+                    <span className="font-bold uppercase tracking-wider">Amount Paid</span>
+                    <span className="font-bold text-green-400">
+                      ₹{Math.round((totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))) * 1.18 - quote.advanceAmount).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
+                  <span className="font-bold uppercase tracking-wider">Grand Total</span>
+                  <span className="font-bold text-green-400">
+                    ₹{Math.round((totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))) * 1.18).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              )}
+            </div>)}
+        </div>
+
+        {/* {!isCustomerView && (
         <div className="mb-8">
           <p className="text-[10px] text-slate-500 italic leading-tight">
             * This is a tentative quote. Final GST 18% as applicable and actual transport will be added manually at the time of final invoice.
@@ -1158,86 +1393,91 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
         </div>
       )} */}
 
-      <div className="mt-12 pt-8 border-t border-slate-200">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          {/* Banking Details */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-bold text-slate-900 border-b pb-2 uppercase tracking-tight">Banking Details (RTGS / NEFT)</h4>
-            <div className="space-y-2 text-xs text-slate-600">
-              <div className="flex">
-                <span className="w-28 font-bold text-slate-400">Company Name</span>
-                <span className="font-bold text-slate-800">Magnific Home Appliances</span>
+        <div className="mt-12 pt-8 border-t border-slate-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* Banking Details */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-slate-900 border-b pb-2 uppercase tracking-tight">Banking Details (RTGS / NEFT)</h4>
+              <div className="space-y-2 text-xs text-slate-600">
+                <div className="flex">
+                  <span className="w-28 font-bold text-slate-400">Company Name</span>
+                  <span className="font-bold text-slate-800">Magnific Home Appliances</span>
+                </div>
+                <div className="flex">
+                  <span className="w-28 font-bold text-slate-400">Bank Name</span>
+                  <span className="font-bold text-slate-800">Axis Bank</span>
+                </div>
+                <div className="flex">
+                  <span className="w-28 font-bold text-slate-400">Account No</span>
+                  <span className="font-bold text-indigo-700 tracking-wider">924030028295392</span>
+                </div>
+                <div className="flex">
+                  <span className="w-28 font-bold text-slate-400">Branch</span>
+                  <span className="font-bold text-slate-800">Koramangala</span>
+                </div>
+                <div className="flex">
+                  <span className="w-28 font-bold text-slate-400">IFSC Code</span>
+                  <span className="font-bold text-indigo-700 tracking-wider">UTIB0000194</span>
+                </div>
               </div>
-              <div className="flex">
-                <span className="w-28 font-bold text-slate-400">Bank Name</span>
-                <span className="font-bold text-slate-800">Axis Bank</span>
+            </div>
+
+            {/* QR Code / Summary */}
+            {qrCodeUrl && (
+              <div className="flex flex-col items-center justify-center p-6 border rounded-2xl bg-slate-50 relative group">
+                {shareUrl ? (
+                  <a href={shareUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={qrCodeUrl} alt="Magnific QR" className="w-28 h-28 mb-3 hover:scale-105 transition-transform cursor-pointer" />
+                  </a>
+                ) : (
+                  <img src={qrCodeUrl} alt="Magnific QR" className="w-28 h-28 mb-3" />
+                )}
+                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Scan Quote Online</p>
+                <div className="absolute top-2 right-2 opacity-5">
+                  <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>
+                </div>
               </div>
-              <div className="flex">
-                <span className="w-28 font-bold text-slate-400">Account No</span>
-                <span className="font-bold text-indigo-700 tracking-wider">924030028295392</span>
-              </div>
-              <div className="flex">
-                <span className="w-28 font-bold text-slate-400">Branch</span>
-                <span className="font-bold text-slate-800">Koramangala</span>
-              </div>
-              <div className="flex">
-                <span className="w-28 font-bold text-slate-400">IFSC Code</span>
-                <span className="font-bold text-indigo-700 tracking-wider">UTIB0000194</span>
-              </div>
+            )}
+          </div>
+
+          {/* Terms & Conditions */}
+          <div className="mt-10 pt-8 border-t border-slate-100">
+            <h4 className="text-sm font-bold text-slate-900 mb-6 uppercase tracking-tight">Terms & Conditions:</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+              {[
+                "Validity: 15 Days from the date of quotation.",
+                "Payment: 50% of advance to be paid while booking, 100% payment before delivery.",
+                "If applicable: Kindly ensure your GST details are provided prior to the dispatch of the product. No changes can be made once the invoice is generated.",
+                "No refunds will be issued unless there is an error on the company's part.",
+                "Delivery of the product will only be considered once the customer's cheque has been issued and cleared. Until that time, no delivery can be expected, so customers should plan accordingly.",
+                "Company is not responsible for any breakage.",
+                "Goods once sold cannot be taken back or exchanged.",
+                "Request you to co-operate until delivery is done.",
+                "Product should be checked at the time of delivery itself.",
+                "Bulbs are not included with the purchase of any light fittings.",
+                "Bulbs are charged additionally.",
+                "Freight charges exclusive. Installation is chargeable.",
+                "The company will deliver light products only if the order value exceeds 50,000.",
+                "Light customization will be charged based on requirements."
+              ].map((term, i) => (
+                <div key={i} className="flex space-x-3 items-start">
+                  <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0">{i + 1}</span>
+                  <p className="text-[11px] text-slate-500 leading-tight font-medium">{term}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* QR Code / Summary */}
-          {qrCodeUrl && (
-            <div className="flex flex-col items-center justify-center p-6 border rounded-2xl bg-slate-50 relative group">
-              {shareUrl ? (
-                <a href={shareUrl} target="_blank" rel="noopener noreferrer">
-                  <img src={qrCodeUrl} alt="Magnific QR" className="w-28 h-28 mb-3 hover:scale-105 transition-transform cursor-pointer" />
-                </a>
-              ) : (
-                <img src={qrCodeUrl} alt="Magnific QR" className="w-28 h-28 mb-3" />
-              )}
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Scan Quote Online</p>
-              <div className="absolute top-2 right-2 opacity-5">
-                <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Terms & Conditions */}
-        <div className="mt-10 pt-8 border-t border-slate-100">
-          <h4 className="text-sm font-bold text-slate-900 mb-6 uppercase tracking-tight">Terms & Conditions:</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
-            {[
-              "Validity: 15 Days from the date of quotation.",
-              "Payment: 50% of advance to be paid while booking, 100% payment before delivery.",
-              "If applicable: Kindly ensure your GST details are provided prior to the dispatch of the product. No changes can be made once the invoice is generated.",
-              "No refunds will be issued unless there is an error on the company's part.",
-              "Delivery of the product will only be considered once the customer's cheque has been issued and cleared. Until that time, no delivery can be expected, so customers should plan accordingly.",
-              "Company is not responsible for any breakage.",
-              "Goods once sold cannot be taken back or exchanged.",
-              "Request you to co-operate until delivery is done.",
-              "Product should be checked at the time of delivery itself.",
-              "Bulbs are not included with the purchase of any light fittings.",
-              "Bulbs are charged additionally.",
-              "Freight charges exclusive. Installation is chargeable.",
-              "The company will deliver light products only if the order value exceeds 50,000.",
-              "Light customization will be charged based on requirements."
-            ].map((term, i) => (
-              <div key={i} className="flex space-x-3 items-start">
-                <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0">{i + 1}</span>
-                <p className="text-[11px] text-slate-500 leading-tight font-medium">{term}</p>
-              </div>
-            ))}
+          <div className="mt-12 text-center pt-8 border-t border-slate-100">
+            <p className="font-bold text-indigo-700 uppercase tracking-[0.4em] text-[10px]">Experience Luxury • Magnific Designer Fans and Lights • Koramangala</p>
           </div>
         </div>
+      </div >
 
-        <div className="mt-12 text-center pt-8 border-t border-slate-100">
-          <p className="font-bold text-indigo-700 uppercase tracking-[0.4em] text-[10px]">Experience Luxury • Magnific Designer Fans and Lights • Koramangala</p>
-        </div>
+      <div className="w-full bg-[#004aad] text-white text-center py-2 font-bold tracking-widest text-sm print:text-xs print:py-1.5">
+        www.magnific.in
       </div>
-    </>
+    </div >
   );
 }
 
