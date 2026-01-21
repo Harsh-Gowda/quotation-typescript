@@ -15,6 +15,7 @@ const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 
 const SaveIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>;
 const ExcelIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
 const HistoryIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+const EditIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>;
 
 const STORAGE_KEY = 'magnific_quotes_local';
 const OFFICE_ADDRESS = "I Towers, 42/1 1st floor, 100 Feet Rd, Koramangala, Bengaluru, Karnataka 560047";
@@ -32,6 +33,7 @@ export default function App() {
   const [savedQuotes, setSavedQuotes] = useState<Quotation[]>([]);
   const [isSaved, setIsSaved] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isCustomerView, setIsCustomerView] = useState(false);
   const [isPublicMode, setIsPublicMode] = useState(false);
   // const [manualRoundOff, setManualRoundOff] = useState<number | null>(null);
@@ -85,11 +87,13 @@ export default function App() {
     }
   }, []);
 
-  const addToCart = (product: Product, options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number }) => {
+  const addToCart = (product: Product, options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number, customDescription?: string, extraNote?: string }) => {
     const trimmedPlace = options.placeName?.trim() || '';
     const trimmedSize = options.size?.trim() || '';
     const trimmedColor = options.color?.trim() || '';
     const trimmedLamp = options.lamp?.trim() || '';
+    const trimmedDesc = options.customDescription?.trim() || '';
+    const trimmedNote = options.extraNote?.trim() || '';
     const discountVal = options.discount || 0;
 
     setCart(prev => {
@@ -99,6 +103,8 @@ export default function App() {
         (item.size || '') === trimmedSize &&
         (item.color || '') === trimmedColor &&
         (item.lamp || '') === trimmedLamp &&
+        (item.customDescription || '') === trimmedDesc &&
+        (item.extraNote || '') === trimmedNote &&
         (item.discount || 0) === discountVal
       );
       if (existing) {
@@ -108,20 +114,24 @@ export default function App() {
             (item.size || '') === trimmedSize &&
             (item.color || '') === trimmedColor &&
             (item.lamp || '') === trimmedLamp &&
+            (item.customDescription || '') === trimmedDesc &&
+            (item.extraNote || '') === trimmedNote &&
             (item.discount || 0) === discountVal)
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      return [...prev, { product, quantity: 1, placeName: trimmedPlace, size: trimmedSize, color: trimmedColor, lamp: trimmedLamp, discount: discountVal }];
+      return [...prev, { product, quantity: 1, placeName: trimmedPlace, size: trimmedSize, color: trimmedColor, lamp: trimmedLamp, customDescription: trimmedDesc, extraNote: trimmedNote, discount: discountVal }];
     });
   };
 
-  const removeFromCart = (productId: string, options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number }) => {
+  const removeFromCart = (productId: string, options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number, customDescription?: string, extraNote?: string }) => {
     const trimmedPlace = options.placeName || '';
     const trimmedSize = options.size || '';
     const trimmedColor = options.color || '';
     const trimmedLamp = options.lamp || '';
+    const trimmedDesc = options.customDescription || '';
+    const trimmedNote = options.extraNote || '';
     const discountVal = options.discount || 0;
     setCart(prev => prev.filter(item => !(
       item.product.id === productId &&
@@ -129,23 +139,29 @@ export default function App() {
       (item.size || '') === trimmedSize &&
       (item.color || '') === trimmedColor &&
       (item.lamp || '') === trimmedLamp &&
+      (item.customDescription || '') === trimmedDesc &&
+      (item.extraNote || '') === trimmedNote &&
       (item.discount || 0) === discountVal
     )));
   };
 
-  const updateQuantity = (productId: string, options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number }, qty: number) => {
+  const updateQuantity = (productId: string, options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number, customDescription?: string, extraNote?: string }, qty: number) => {
     const trimmedPlace = options.placeName || '';
     const trimmedSize = options.size || '';
     const trimmedColor = options.color || '';
     const trimmedLamp = options.lamp || '';
+    const trimmedDesc = options.customDescription || '';
+    const trimmedNote = options.extraNote || '';
     const discountVal = options.discount || 0;
-    if (qty <= 0) { removeFromCart(productId, { placeName: trimmedPlace, size: trimmedSize, color: trimmedColor, lamp: trimmedLamp, discount: discountVal }); return; }
+    if (qty <= 0) { removeFromCart(productId, { placeName: trimmedPlace, size: trimmedSize, color: trimmedColor, lamp: trimmedLamp, customDescription: trimmedDesc, extraNote: trimmedNote, discount: discountVal }); return; }
     setCart(prev => prev.map(item => (
       item.product.id === productId &&
       (item.placeName || '') === trimmedPlace &&
       (item.size || '') === trimmedSize &&
       (item.color || '') === trimmedColor &&
       (item.lamp || '') === trimmedLamp &&
+      (item.customDescription || '') === trimmedDesc &&
+      (item.extraNote || '') === trimmedNote &&
       (item.discount || 0) === discountVal
     ) ? { ...item, quantity: qty } : item));
   };
@@ -213,6 +229,7 @@ export default function App() {
         color: item.color,
         lamp: item.lamp,
         discount: item.discount,
+        customDescription: item.customDescription, // Added customDescription
         productId: item.product.id
       }))
     };
@@ -254,19 +271,27 @@ export default function App() {
     const data = [
       ["Magnific Quotation"], ["ID", finalQuote.id], ["Date", finalQuote.date], ["Office", OFFICE_ADDRESS], [""],
       ["Customer"], ["Name", finalQuote.customer.name], ["Company", finalQuote.customer.company || ""], ["Email", finalQuote.customer.email], ["Phone", finalQuote.customer.phone], ["Address", finalQuote.customer.address], [""],
-      ["Items"], ["S.No", "Model No", "Product", "Size", "Color", "Lamp", "Area", "Qty", "Unit Price", "Total"],
-      ...finalQuote.items.map((i, idx) => [
-        idx + 1,
-        i.product.modelNumber,
-        i.product.name,
-        i.size || "N/A",
-        i.color || "N/A",
-        i.lamp || "N/A",
-        i.placeName || "N/A",
-        i.quantity,
-        i.product.price,
-        (i.product.price - (i.discount || 0)) * i.quantity
-      ]),
+      ["Items"], ["S.No", "Model No", "Product", "Description", "Extra Note", "Area", "Qty", "Unit Price", "After Discount", "Total"],
+      ...finalQuote.items.map((i, idx) => {
+        const discountAmount = finalQuote.globalDiscountType === 'flat'
+          ? (i.product.price * (finalQuote.globalDiscountValue || 0) / totalPrice(finalQuote.items))
+          : (i.product.price * (finalQuote.globalDiscountValue || 0) / 100);
+
+        const discountedPrice = finalQuote.globalDiscountType ? Math.round(i.product.price - discountAmount) : i.product.price;
+
+        return [
+          idx + 1,
+          i.product.modelNumber,
+          i.product.name,
+          i.customDescription || i.product.description,
+          i.extraNote || "",
+          i.placeName || "N/A",
+          i.quantity,
+          i.product.price,
+          discountedPrice,
+          discountedPrice * i.quantity
+        ];
+      }),
       [""],
       [""],
       ["", "", "", "", "", "", "", "", "", "", "Gross Total", totalPrice(finalQuote.items)],
@@ -728,13 +753,23 @@ export default function App() {
                 ))}
               </div>
             </div>
-            {selectedProduct && (
+            {(selectedProduct || editingIndex !== null) && (
               <ProductModal
-                product={selectedProduct}
-                onClose={() => setSelectedProduct(null)}
+                product={selectedProduct || cart[editingIndex!].product}
+                initialValues={editingIndex !== null ? cart[editingIndex!] : undefined}
+                onClose={() => { setSelectedProduct(null); setEditingIndex(null); }}
                 onAdd={(options) => {
-                  addToCart(selectedProduct, options);
-                  setSelectedProduct(null);
+                  if (editingIndex !== null) {
+                    setCart(prev => {
+                      const newCart = [...prev];
+                      newCart[editingIndex!] = { ...newCart[editingIndex!], ...options };
+                      return newCart;
+                    });
+                    setEditingIndex(null);
+                  } else {
+                    addToCart(selectedProduct!, options);
+                    setSelectedProduct(null);
+                  }
                 }}
               />
             )}
@@ -754,6 +789,8 @@ export default function App() {
                           size: item.size,
                           color: item.color,
                           lamp: item.lamp,
+                          customDescription: item.customDescription,
+                          extraNote: item.extraNote,
                           discount: item.discount
                         })}
                         onQtyChange={q => updateQuantity(item.product.id, {
@@ -761,8 +798,11 @@ export default function App() {
                           size: item.size,
                           color: item.color,
                           lamp: item.lamp,
+                          customDescription: item.customDescription,
+                          extraNote: item.extraNote,
                           discount: item.discount
                         }, q)}
+                        onEdit={() => setEditingIndex(idx)}
                       />
                     ))
                   }
@@ -913,11 +953,10 @@ export default function App() {
   );
 }
 
-function ProductModal({ product, onClose, onAdd }: { product: Product, onClose: () => void, onAdd: (options: { placeName: string, size: string, color: string, lamp: string }) => void }) {
-  const [place, setPlace] = useState('');
-  const [size, setSize] = useState('');
-  const [color, setColor] = useState('');
-  const [lamp, setLamp] = useState('');
+function ProductModal({ product, onClose, onAdd, initialValues }: { product: Product, onClose: () => void, onAdd: (options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number, customDescription?: string, extraNote?: string }) => void, initialValues?: any }) {
+  const [place, setPlace] = useState(initialValues?.placeName || '');
+  const [description, setDescription] = useState(initialValues?.customDescription || product.description);
+  const [extraNote, setExtraNote] = useState(initialValues?.extraNote || '');
   const [activeImg, setActiveImg] = useState(product.image);
   const gallery = [product.image, ...(product.gallery || [])];
 
@@ -947,7 +986,7 @@ function ProductModal({ product, onClose, onAdd }: { product: Product, onClose: 
 
         {/* Right Side: Configuration */}
         <div className="md:w-1/2 p-8 flex flex-col">
-          <div className="flex justify-between items-start mb-4">
+          <div className="flex justify-between items-start mb-6">
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">{product.category}</span>
@@ -960,43 +999,27 @@ function ProductModal({ product, onClose, onAdd }: { product: Product, onClose: 
             </button>
           </div>
 
-          <p className="text-slate-500 text-sm mb-8 leading-relaxed">{product.description}</p>
-
-          <div className="space-y-6 flex-1">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Product Size</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 48 Inch / XXL"
-                  className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium text-sm transition-all"
-                  value={size}
-                  onChange={e => setSize(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Body Color</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Matte Black"
-                  className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium text-sm transition-all"
-                  value={color}
-                  onChange={e => setColor(e.target.value)}
-                />
-              </div>
+          <div className="space-y-5 flex-1 overflow-y-auto no-scrollbar pr-1">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Technical Details (Editable)</label>
+              <textarea
+                rows={4}
+                placeholder="Enter technical specifications..."
+                className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium text-sm transition-all resize-none leading-relaxed"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Lamp / Bulb Type</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Warm White 12W"
-                  className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium text-sm transition-all"
-                  value={lamp}
-                  onChange={e => setLamp(e.target.value)}
-                />
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Extra Note (Blue Highlight)</label>
+              <textarea
+                rows={2}
+                placeholder="Add a highlighted note for this item..."
+                className="w-full p-3 border border-blue-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30 font-medium text-sm transition-all resize-none leading-relaxed text-blue-700"
+                value={extraNote}
+                onChange={e => setExtraNote(e.target.value)}
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -1017,10 +1040,10 @@ function ProductModal({ product, onClose, onAdd }: { product: Product, onClose: 
               <span className="text-2xl font-bold text-indigo-700">₹{product.price.toLocaleString('en-IN')}</span>
             </div>
             <button
-              onClick={() => onAdd({ placeName: place, size, color, lamp, discount: 0 })}
+              onClick={() => onAdd({ placeName: place, customDescription: description, extraNote: extraNote })}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center"
             >
-              <CartIcon /> <span className="ml-2">Add to Quotation</span>
+              {initialValues ? <EditIcon /> : <CartIcon />} <span className="ml-2">{initialValues ? 'Update Item' : 'Add to Quotation'}</span>
             </button>
           </div>
         </div>
@@ -1064,7 +1087,7 @@ function ProductCard({ product, onAddClick }: { product: Product, onAddClick: ()
   );
 }
 
-function CartItem({ item, onRemove, onQtyChange }: { item: QuoteItem, onRemove: () => void, onQtyChange: (q: number) => void }) {
+function CartItem({ item, onRemove, onQtyChange, onEdit }: { item: QuoteItem, onRemove: () => void, onQtyChange: (q: number) => void, onEdit: () => void }) {
   return (
     <div className="flex flex-col p-3 bg-slate-50 rounded-xl group border border-slate-100 space-y-2">
       <div className="flex items-center space-x-3">
@@ -1077,9 +1100,14 @@ function CartItem({ item, onRemove, onQtyChange }: { item: QuoteItem, onRemove: 
           </div>
           <p className="text-[10px] text-indigo-600 font-bold mt-1">₹{item.product.price.toLocaleString('en-IN')}</p>
         </div>
-        <button onClick={onRemove} className="text-slate-300 hover:text-red-500 p-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-        </button>
+        <div className="flex flex-col space-y-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={onEdit} className="text-slate-300 hover:text-indigo-600 p-1" title="Edit Item">
+            <EditIcon />
+          </button>
+          <button onClick={onRemove} className="text-slate-300 hover:text-red-500 p-1" title="Remove Item">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
+        </div>
       </div>
       <div className="flex justify-between items-center pt-1 border-t border-slate-200">
         <span className="text-[10px] text-slate-500 font-bold italic truncate flex-1 mr-2">{item.placeName || "Unspecified Area"}</span>
@@ -1150,6 +1178,7 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
               <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[7%]">QTY</th>
               {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[13%]">AREA</th>}
               <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[10%]">PRICE</th>
+              {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[10%]">AFTER DISCOUNT</th>}
               {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] font-bold text-slate-800 uppercase text-center w-[10%]">TOTAL</th>}
             </tr>
           </thead>
@@ -1168,23 +1197,13 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
                 {!isCustomerView && (
                   <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center align-middle">
                     <div className="flex flex-col items-center justify-center space-y-1 w-full">
-                      {i.size && (
-                        <div className="text-[10px] flex items-center space-x-1">
-                          <span className="font-bold text-slate-500 uppercase">Size:</span>
-                          <span className="font-bold text-slate-900">{i.size}</span>
-                        </div>
-                      )}
-                      {i.lamp && (
-                        <div className="text-[10px] flex items-center space-x-1">
-                          <span className="font-bold text-slate-500 uppercase">Lamp:</span>
-                          <span className="font-bold text-slate-900">{i.lamp}</span>
-                        </div>
-                      )}
-                      {i.color && (
-                        <div className="text-[10px] flex items-center space-x-1">
-                          <span className="font-bold text-slate-500 uppercase">Finish:</span>
-                          <span className="font-bold text-indigo-700">{i.color}</span>
-                        </div>
+                      <span className="text-[11px] text-slate-600 font-medium leading-relaxed italic block underline decoration-indigo-200/50 underline-offset-4 whitespace-pre-line">
+                        {i.customDescription || i.product.description}
+                      </span>
+                      {i.extraNote && (
+                        <span className="text-[10px] text-blue-600 font-bold whitespace-pre-line border-t border-blue-100 mt-1 pt-1 w-full text-center">
+                          {i.extraNote}
+                        </span>
                       )}
                     </div>
                   </td>
@@ -1204,7 +1223,29 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
 
                 {!isCustomerView && (
                   <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-black text-slate-900">
-                    {((i.product.price - (i.discount || 0)) * i.quantity).toLocaleString('en-IN')}
+                    {(() => {
+                      const discountAmount = quote.globalDiscountType === 'flat'
+                        ? (i.product.price * (quote.globalDiscountValue || 0) / totalPrice(quote.items))
+                        : (i.product.price * (quote.globalDiscountValue || 0) / 100);
+
+                      return quote.globalDiscountType
+                        ? Math.round(i.product.price - discountAmount).toLocaleString('en-IN')
+                        : '-';
+                    })()}
+                  </td>
+                )}
+
+                {!isCustomerView && (
+                  <td className="border-[1.5px] border-slate-900 py-4 px-2 text-center text-[12px] font-black text-slate-900">
+                    {(() => {
+                      const discountAmount = quote.globalDiscountType === 'flat'
+                        ? (i.product.price * (quote.globalDiscountValue || 0) / totalPrice(quote.items))
+                        : (i.product.price * (quote.globalDiscountValue || 0) / 100);
+
+                      const discountedPrice = quote.globalDiscountType ? (i.product.price - discountAmount) : i.product.price;
+
+                      return Math.round(discountedPrice * i.quantity).toLocaleString('en-IN');
+                    })()}
                   </td>
                 )}
               </tr>
@@ -1213,26 +1254,7 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
           {!isCustomerView && (
             <tfoot>
               <tr>
-                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Gross Total</td>
-                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{totalPrice(quote.items).toLocaleString('en-IN')}</td>
-              </tr>
-
-              {quote.globalDiscountType && (
-                <tr>
-                  <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-red-600 uppercase leading-none">
-                    Discount ({quote.globalDiscountType === 'flat' ? 'Flat' : `${quote.globalDiscountValue}%`})
-                  </td>
-                  <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-red-600 leading-none">
-                    -{(quote.globalDiscountType === 'flat'
-                      ? (quote.globalDiscountValue || 0)
-                      : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100)
-                    ).toLocaleString('en-IN')}
-                  </td>
-                </tr>
-              )}
-
-              <tr>
-                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Net Total</td>
+                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Subtotal</td>
                 <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
                   {(totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))).toLocaleString('en-IN')}
                 </td>
@@ -1287,18 +1309,17 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
                   <h4 className="font-bold text-slate-900 text-sm mt-1 leading-tight">{i.product.name}</h4>
 
                   {!isCustomerView && (
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
-                      {i.size && (
-                        <div><span className="text-slate-400 font-bold">Size:</span> <span className="font-bold">{i.size}</span></div>
-                      )}
-                      {i.color && (
-                        <div><span className="text-slate-400 font-bold">Color:</span> <span className="font-bold">{i.color}</span></div>
-                      )}
-                      {i.lamp && (
-                        <div className="col-span-2"><span className="text-slate-400 font-bold">Lamp:</span> <span className="font-bold">{i.lamp}</span></div>
+                    <div className="mt-3 flex flex-col space-y-2">
+                      <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic border-l-2 border-indigo-200 pl-2 whitespace-pre-line">
+                        {i.customDescription || i.product.description}
+                      </p>
+                      {i.extraNote && (
+                        <p className="text-[10px] text-blue-600 font-bold leading-relaxed whitespace-pre-line bg-blue-50 p-2 rounded-lg">
+                          {i.extraNote}
+                        </p>
                       )}
                       {i.placeName && (
-                        <div className="col-span-2 border-t pt-1 mt-1 text-slate-500 italic">{i.placeName}</div>
+                        <div className="text-slate-500 italic text-[10px] pt-1 border-t border-slate-100">{i.placeName}</div>
                       )}
                     </div>
                   )}
@@ -1312,14 +1333,15 @@ function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }
                   <span className="font-medium text-slate-500 line-through text-[10px]">₹{i.product.price.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex flex-col items-end">
-                  {!isCustomerView && i.discount ? (
-                    <>
-                      <span className="text-[10px] text-green-600 font-bold">-{i.discount} Off</span>
-                      <span className="font-black text-indigo-700 text-base">₹{((i.product.price - (i.discount || 0)) * i.quantity).toLocaleString('en-IN')}</span>
-                    </>
-                  ) : (
-                    <span className="font-black text-indigo-700 text-base">₹{(i.product.price * i.quantity).toLocaleString('en-IN')}</span>
-                  )}
+                  {(() => {
+                    const discountAmount = quote.globalDiscountType === 'flat'
+                      ? (i.product.price * (quote.globalDiscountValue || 0) / totalPrice(quote.items))
+                      : (i.product.price * (quote.globalDiscountValue || 0) / 100);
+                    const discountedPrice = quote.globalDiscountType ? (i.product.price - discountAmount) : i.product.price;
+                    return (
+                      <span className="font-black text-indigo-700 text-base">₹{Math.round(discountedPrice * i.quantity).toLocaleString('en-IN')}</span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

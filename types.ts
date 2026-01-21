@@ -26,6 +26,8 @@ export interface QuoteItem {
   color?: string;
   lamp?: string;
   discount?: number;
+  customDescription?: string;
+  extraNote?: string;
 }
 
 export interface Quotation {
