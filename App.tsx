@@ -1005,7 +1005,7 @@ function ProductModal({ product, onClose, onAdd, initialValues }: { product: Pro
               <textarea
                 rows={4}
                 placeholder="Enter technical specifications..."
-                className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium text-sm transition-all resize-none leading-relaxed"
+                className="w-full p-3 border border-black-10 outline-none rounded-xl  font-medium text-sm transition-all"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
               />
@@ -1016,7 +1016,8 @@ function ProductModal({ product, onClose, onAdd, initialValues }: { product: Pro
               <textarea
                 rows={2}
                 placeholder="Add a highlighted note for this item..."
-                className="w-full p-3 border border-blue-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50/30 font-medium text-sm transition-all resize-none leading-relaxed text-blue-700"
+                className="w-full p-3 border border-black-100 rounded-xl outline-none 0 font-medium text-sm transition-all resize-none leading-relaxed text-blue-700"
+                //  focus:ring-2 focus:ring-blue-500 bg-blue-50/3
                 value={extraNote}
                 onChange={e => setExtraNote(e.target.value)}
               />
@@ -1027,7 +1028,8 @@ function ProductModal({ product, onClose, onAdd, initialValues }: { product: Pro
               <input
                 type="text"
                 placeholder="Ex: Master Bedroom, Living Area..."
-                className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 font-medium text-sm transition-all"
+                className="w-full p-3 border border-black-10 outline-none rounded-xl  font-medium text-sm transition-all"
+                // outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50
                 value={place}
                 onChange={e => setPlace(e.target.value)}
               />
