@@ -69,6 +69,28 @@ export default function ProductSelection({
         if (categoryFilter !== 'All') {
             filtered = filtered.filter(p => p.category === categoryFilter);
         }
+
+        // Apply color filter (searching in description as it's not a direct field)
+        if (colorFilter !== 'All') {
+            filtered = filtered.filter(p =>
+                p.description.toLowerCase().includes(colorFilter.toLowerCase())
+            );
+        }
+
+        // Apply size filter (searching in description)
+        if (sizeFilter !== 'All') {
+            filtered = filtered.filter(p =>
+                p.description.toLowerCase().includes(sizeFilter.toLowerCase())
+            );
+        }
+
+        // Apply finishing filter (searching in description)
+        if (finishingFilter !== 'All') {
+            filtered = filtered.filter(p =>
+                p.description.toLowerCase().includes(finishingFilter.toLowerCase())
+            );
+        }
+
         return filtered;
     }, [searchTerm, categoryFilter, colorFilter, sizeFilter, finishingFilter]);
 
@@ -325,7 +347,30 @@ export default function ProductSelection({
                                         </button>
                                     </span>
                                 )}
-                                {/* ... existing color/size/finishing filters ... */}
+                                {colorFilter !== 'All' && (
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        🎨 {colorFilter}
+                                        <button onClick={() => setColorFilter('All')} className="ml-1.5 text-indigo-500 hover:text-indigo-800 focus:outline-none">
+                                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                        </button>
+                                    </span>
+                                )}
+                                {sizeFilter !== 'All' && (
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        📏 {sizeFilter}"
+                                        <button onClick={() => setSizeFilter('All')} className="ml-1.5 text-indigo-500 hover:text-indigo-800 focus:outline-none">
+                                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                        </button>
+                                    </span>
+                                )}
+                                {finishingFilter !== 'All' && (
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        ✨ {finishingFilter}
+                                        <button onClick={() => setFinishingFilter('All')} className="ml-1.5 text-indigo-500 hover:text-indigo-800 focus:outline-none">
+                                            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                                        </button>
+                                    </span>
+                                )}
                                 <button
                                     onClick={() => {
                                         setCategoryFilter('All');
@@ -423,7 +468,7 @@ export default function ProductSelection({
                                         onClick={() => setDiscountType(discountType === 'flat' ? null : 'flat')}
                                         className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'flat' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
                                     >
-                                        Flat (%)
+                                        Flat (₹)
                                     </button>
                                     <button
                                         onClick={() => setDiscountType(discountType === 'percentage' ? null : 'percentage')}
@@ -436,7 +481,7 @@ export default function ProductSelection({
                                 {/* Input */}
                                 {discountType && (
                                     <div className="flex items-center space-x-2 bg-white px-3 py-2 border rounded-md focus-within:ring-2 ring-indigo-500/20 ring-offset-1">
-                                        <span className="text-slate-400 font-bold">%</span>
+                                        <span className="text-slate-400 font-bold">{discountType === 'flat' ? '₹' : '%'}</span>
                                         <input
                                             type="number"
                                             className="w-full bg-transparent outline-none font-bold text-slate-900 placeholder-slate-300"
@@ -455,12 +500,22 @@ export default function ProductSelection({
                                             <span>₹{subtotal.toLocaleString('en-IN')}</span>
                                         </div>
                                         <div className="flex justify-between text-red-500 font-medium">
-                                            <span>Discount ({discountValue}%):</span>
-                                            <span>-₹{Math.round(subtotal * discountValue / 100).toLocaleString('en-IN')}</span>
+                                            <span>Discount {discountType === 'percentage' ? `(${discountValue}%)` : ''}:</span>
+                                            <span>
+                                                -₹{(discountType === 'flat'
+                                                    ? discountValue
+                                                    : Math.round(subtotal * discountValue / 100)
+                                                ).toLocaleString('en-IN')}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between font-bold text-slate-900 pt-1">
                                             <span>Net Total:</span>
-                                            <span>₹{Math.round(subtotal * (1 - discountValue / 100)).toLocaleString('en-IN')}</span>
+                                            <span>
+                                                ₹{(discountType === 'flat'
+                                                    ? (subtotal - discountValue)
+                                                    : Math.round(subtotal * (1 - discountValue / 100))
+                                                ).toLocaleString('en-IN')}
+                                            </span>
                                         </div>
                                         {discountType === 'percentage' && (
                                             <div className="flex justify-between text-slate-500 italic">
@@ -470,7 +525,12 @@ export default function ProductSelection({
                                         )}
                                         <div className="flex justify-between font-black text-indigo-700 pt-1 border-t border-dashed">
                                             <span>Final Amount:</span>
-                                            <span>₹{Math.round(subtotal * (1 - discountValue / 100) * (discountType === 'percentage' ? 1.18 : 1)).toLocaleString('en-IN')}</span>
+                                            <span>
+                                                ₹{(discountType === 'flat'
+                                                    ? (subtotal - discountValue)
+                                                    : Math.round(subtotal * (1 - discountValue / 100) * 1.18)
+                                                ).toLocaleString('en-IN')}
+                                            </span>
                                         </div>
                                     </div>
                                 )}

@@ -255,8 +255,9 @@ export default function App() {
     ];
 
     finalQuote.items.forEach((item, idx) => {
-      const discount = item.product.price * (finalQuote.globalDiscountValue || 0) / 100;
-      const price = finalQuote.globalDiscountValue ? (item.product.price - discount) : item.product.price;
+      // Calculate item-specific discount if any
+      const itemDiscountAmount = item.discount ? (item.product.price * item.discount / 100) : 0;
+      const itemPriceAfterDiscount = item.product.price - itemDiscountAmount;
 
       worksheetData.push([
         (idx + 1).toString(),
@@ -265,29 +266,38 @@ export default function App() {
         (item.customDescription || item.product.description) + (item.extraNote ? `\nNote: ${item.extraNote}` : ''),
         item.placeName || '-',
         item.quantity.toString(),
-        price.toString(),
-        (price * item.quantity).toString()
+        itemPriceAfterDiscount.toFixed(2), // Use item price after its own discount
+        (itemPriceAfterDiscount * item.quantity).toFixed(2)
       ]);
     });
 
-    const netAmount = totalPrice(finalQuote.items) - Math.round(totalPrice(finalQuote.items) * (finalQuote.globalDiscountValue || 0) / 100);
-    const gstAmount = Math.round(netAmount * 0.18);
-    const grandTotal = finalQuote.globalDiscountType === 'flat' ? netAmount : Math.round(netAmount * 1.18);
+    const grossTotal = totalPrice(finalQuote.items); // This is the sum of (item.product.price * item.quantity)
+    const totalItemDiscount = finalQuote.items.reduce((sum, item) => sum + (item.product.price * (item.discount || 0) / 100 * item.quantity), 0);
+    const subtotalAfterItemDiscounts = grossTotal - totalItemDiscount;
+
+    const globalDiscountAmount = finalQuote.globalDiscountType === 'percentage'
+      ? (subtotalAfterItemDiscounts * (finalQuote.globalDiscountValue || 0) / 100)
+      : (finalQuote.globalDiscountValue || 0);
+
+    const netAmountBeforeTax = subtotalAfterItemDiscounts - globalDiscountAmount;
+    const gstAmount = netAmountBeforeTax * finalQuote.taxRate;
+    const grandTotal = netAmountBeforeTax + gstAmount;
 
     worksheetData.push(['']);
-    worksheetData.push(['', '', '', '', '', '', 'Gross Total', totalPrice(finalQuote.items).toString()]);
+    worksheetData.push(['', '', '', '', '', '', 'Gross Total', grossTotal.toLocaleString('en-IN')]);
     if (finalQuote.globalDiscountValue) {
-      worksheetData.push(['', '', '', '', '', '', `Discount (${finalQuote.globalDiscountValue}%)`, `-${Math.round(totalPrice(finalQuote.items) * (finalQuote.globalDiscountValue || 0) / 100)}`]);
+      const label = finalQuote.globalDiscountType === 'percentage' ? `Discount (${finalQuote.globalDiscountValue}%)` : 'Discount (Flat)';
+      worksheetData.push(['', '', '', '', '', '', label, `-${globalDiscountAmount.toLocaleString('en-IN')}`]);
     }
-    worksheetData.push(['', '', '', '', '', '', 'Net Total', netAmount.toString()]);
+    worksheetData.push(['', '', '', '', '', '', 'Net Total', netAmountBeforeTax.toLocaleString('en-IN')]);
     if (finalQuote.globalDiscountType === 'percentage' || !finalQuote.globalDiscountValue) {
-      worksheetData.push(['', '', '', '', '', '', 'GST (18%)', gstAmount.toString()]);
+      worksheetData.push(['', '', '', '', '', '', 'GST (18%)', gstAmount.toLocaleString('en-IN')]);
     }
     if (finalQuote.advanceAmount) {
-      worksheetData.push(['', '', '', '', '', '', 'Advance Paid', finalQuote.advanceAmount.toString()]);
-      worksheetData.push(['', '', '', '', '', '', 'Balance Due', (grandTotal - finalQuote.advanceAmount).toString()]);
+      worksheetData.push(['', '', '', '', '', '', 'Advance Paid', finalQuote.advanceAmount.toLocaleString('en-IN')]);
+      worksheetData.push(['', '', '', '', '', '', 'Balance Due', (grandTotal - finalQuote.advanceAmount).toLocaleString('en-IN')]);
     } else {
-      worksheetData.push(['', '', '', '', '', '', 'Grand Total', grandTotal.toString()]);
+      worksheetData.push(['', '', '', '', '', '', 'Grand Total', grandTotal.toLocaleString('en-IN')]);
     }
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);

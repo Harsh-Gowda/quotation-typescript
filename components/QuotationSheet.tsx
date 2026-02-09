@@ -114,11 +114,15 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                 {!isCustomerView && (
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-black text-slate-900">
                                         {(() => {
-                                            const discountAmount = i.product.price * (quote.globalDiscountValue || 0) / 100;
-
-                                            return quote.globalDiscountValue
-                                                ? Math.round(i.product.price - discountAmount).toLocaleString('en-IN')
-                                                : '-';
+                                            if (!quote.globalDiscountValue) return '-';
+                                            if (quote.globalDiscountType === 'percentage') {
+                                                const discountAmount = i.product.price * quote.globalDiscountValue / 100;
+                                                return Math.round(i.product.price - discountAmount).toLocaleString('en-IN');
+                                            }
+                                            // For Flat, we don't usually show 'after discount' per item in this specific table layout 
+                                            // as it's a global absolute value, but we can return price if it's confusing.
+                                            // The user i-8 i-9 might want it to remain as original price if it's a lump sum.
+                                            return Math.round(i.product.price).toLocaleString('en-IN');
                                         })()}
                                     </td>
                                 )}
@@ -126,9 +130,18 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                 {!isCustomerView && (
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-black text-slate-900">
                                         {(() => {
-                                            const discountAmount = i.product.price * (quote.globalDiscountValue || 0) / 100;
-                                            const discountedPrice = quote.globalDiscountValue ? (i.product.price - discountAmount) : i.product.price;
-                                            return Math.round(discountedPrice * i.quantity).toLocaleString('en-IN');
+                                            const isPercentage = quote.globalDiscountType === 'percentage';
+                                            const gDiscount = quote.globalDiscountValue || 0;
+
+                                            if (gDiscount <= 0) return Math.round(i.product.price * i.quantity).toLocaleString('en-IN');
+
+                                            if (isPercentage) {
+                                                const discountAmount = i.product.price * gDiscount / 100;
+                                                const discountedPrice = i.product.price - discountAmount;
+                                                return Math.round(discountedPrice * i.quantity).toLocaleString('en-IN');
+                                            }
+                                            // For Flat, we show original total for the item, as the discount is a lump sum at the bottom.
+                                            return Math.round(i.product.price * i.quantity).toLocaleString('en-IN');
                                         })()}
                                     </td>
                                 )}
@@ -147,20 +160,32 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                 {quote.globalDiscountValue ? (
                                     <tr>
                                         <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-red-600 uppercase leading-none">
-                                            Discount ({quote.globalDiscountValue}%)
+                                            Discount {quote.globalDiscountType === 'percentage' ? `(${quote.globalDiscountValue}%)` : '(Flat)'}
                                         </td>
                                         <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-red-600 leading-none">
-                                            - {Math.round(totalPrice(quote.items) * quote.globalDiscountValue / 100).toLocaleString('en-IN')}
+                                            - {(() => {
+                                                const sub = totalPrice(quote.items);
+                                                const isPercentage = quote.globalDiscountType === 'percentage';
+                                                const val = quote.globalDiscountValue || 0;
+                                                const discount = isPercentage ? Math.round(sub * val / 100) : val;
+                                                return discount.toLocaleString('en-IN');
+                                            })()}
                                         </td>
                                     </tr>
                                 ) : null}
 
-                                {/* Show GST only if globalDiscountType is 'percentage' OR no discount is applied */}
-                                {(quote.globalDiscountType === 'percentage' || !quote.globalDiscountValue) && (
+                                {/* Show GST row: Only if it's a PERCENTAGE discount or NO discount. Flat discount orders are net total only as per requirement. */}
+                                {((quote.globalDiscountType === 'percentage' && (quote.globalDiscountValue || 0) >= 0) || !quote.globalDiscountValue) && (
                                     <tr>
                                         <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
                                         <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
-                                            {Math.round((totalPrice(quote.items) - Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100)) * 0.18).toLocaleString('en-IN')}
+                                            {(() => {
+                                                const sub = totalPrice(quote.items);
+                                                const isPercentage = quote.globalDiscountType === 'percentage';
+                                                const val = quote.globalDiscountValue || 0;
+                                                const discount = isPercentage ? Math.round(sub * val / 100) : val;
+                                                return Math.round((sub - discount) * 0.18).toLocaleString('en-IN');
+                                            })()}
                                         </td>
                                     </tr>
                                 )}
@@ -175,9 +200,13 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                             <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Amount Paid</td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                                 ₹{(() => {
-                                                    const baseAmount = totalPrice(quote.items) - Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100);
-                                                    const finalAmount = quote.globalDiscountType === 'flat' ? baseAmount : Math.round(baseAmount * 1.18);
-                                                    return (finalAmount - quote.advanceAmount).toLocaleString('en-IN');
+                                                    const sub = totalPrice(quote.items);
+                                                    const isPercentage = quote.globalDiscountType === 'percentage';
+                                                    const val = quote.globalDiscountValue || 0;
+                                                    const discount = isPercentage ? Math.round(sub * val / 100) : val;
+                                                    const net = sub - discount;
+                                                    const finalAmount = isPercentage ? Math.round(net * 1.18) : net;
+                                                    return (finalAmount - quote.advanceAmount!).toLocaleString('en-IN');
                                                 })()}
                                             </td>
                                         </tr>
@@ -187,8 +216,12 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                         <td colSpan={7} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Grand Total</td>
                                         <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                             ₹{(() => {
-                                                const baseAmount = totalPrice(quote.items) - Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100);
-                                                const finalAmount = quote.globalDiscountType === 'flat' ? baseAmount : Math.round(baseAmount * 1.18);
+                                                const sub = totalPrice(quote.items);
+                                                const isPercentage = quote.globalDiscountType === 'percentage';
+                                                const val = quote.globalDiscountValue || 0;
+                                                const discount = isPercentage ? Math.round(sub * val / 100) : val;
+                                                const net = sub - discount;
+                                                const finalAmount = isPercentage ? Math.round(net * 1.18) : net;
                                                 return finalAmount.toLocaleString('en-IN');
                                             })()}
                                         </td>
@@ -202,8 +235,12 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                 <td colSpan={3} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Total Amount</td>
                                 <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                     ₹{(() => {
-                                        const baseAmount = totalPrice(quote.items) - Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100);
-                                        const finalAmount = quote.globalDiscountType === 'flat' ? baseAmount : Math.round(baseAmount * 1.18);
+                                        const sub = totalPrice(quote.items);
+                                        const isPercentage = quote.globalDiscountType === 'percentage';
+                                        const val = quote.globalDiscountValue || 0;
+                                        const discount = isPercentage ? Math.round(sub * val / 100) : val;
+                                        const net = sub - discount;
+                                        const finalAmount = isPercentage ? Math.round(net * 1.18) : net;
                                         return finalAmount.toLocaleString('en-IN');
                                     })()}
                                 </td>
@@ -255,10 +292,17 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                 </div>
                                 <div className="flex flex-col items-end">
                                     {(() => {
-                                        const discountAmount = i.product.price * (quote.globalDiscountValue || 0) / 100;
-                                        const discountedPrice = quote.globalDiscountValue ? (i.product.price - discountAmount) : i.product.price;
+                                        const isPercentage = quote.globalDiscountType === 'percentage';
+                                        const gDiscount = quote.globalDiscountValue || 0;
+                                        if (isPercentage && gDiscount > 0) {
+                                            const discountAmount = i.product.price * gDiscount / 100;
+                                            const discountedPrice = i.product.price - discountAmount;
+                                            return (
+                                                <span className="font-black text-indigo-700 text-base">₹{Math.round(discountedPrice * i.quantity).toLocaleString('en-IN')}</span>
+                                            );
+                                        }
                                         return (
-                                            <span className="font-black text-indigo-700 text-base">₹{Math.round(discountedPrice * i.quantity).toLocaleString('en-IN')}</span>
+                                            <span className="font-black text-indigo-700 text-base">₹{Math.round(i.product.price * i.quantity).toLocaleString('en-IN')}</span>
                                         );
                                     })()}
                                 </div>
@@ -274,7 +318,7 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                 <span className="font-bold">{totalPrice(quote.items).toLocaleString('en-IN')}</span>
                             </div>
 
-                            {quote.globalDiscountType && (
+                            {quote.globalDiscountValue && (
                                 <div className="flex justify-between text-red-400">
                                     <span>Discount ({quote.globalDiscountType === 'flat' ? 'Flat' : `${quote.globalDiscountValue}%`})</span>
                                     <span className="font-bold">
@@ -286,7 +330,7 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                 </div>
                             )}
 
-                            {quote.globalDiscountType && (
+                            {quote.globalDiscountValue && (
                                 <div className="flex justify-between border-t border-slate-700 pt-2">
                                     <span className="text-slate-300">Net Total</span>
                                     <span className="font-bold">
@@ -298,7 +342,13 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                             <div className="flex justify-between">
                                 <span className="text-slate-400">GST @18%</span>
                                 <span className="font-bold">
-                                    {Math.round((totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))) * 0.18).toLocaleString('en-IN')}
+                                    {(() => {
+                                        const sub = totalPrice(quote.items);
+                                        const isPercentage = quote.globalDiscountType === 'percentage';
+                                        const val = quote.globalDiscountValue || 0;
+                                        const discount = isPercentage ? Math.round(sub * val / 100) : val;
+                                        return Math.round((sub - discount) * 0.18).toLocaleString('en-IN');
+                                    })()}
                                 </span>
                             </div>
 
@@ -311,7 +361,15 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                     <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
                                         <span className="font-bold uppercase tracking-wider">Amount Paid</span>
                                         <span className="font-bold text-green-400">
-                                            ₹{Math.round((totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))) * 1.18 - quote.advanceAmount).toLocaleString('en-IN')}
+                                            ₹{(() => {
+                                                const sub = totalPrice(quote.items);
+                                                const isPercentage = quote.globalDiscountType === 'percentage';
+                                                const val = quote.globalDiscountValue || 0;
+                                                const discount = isPercentage ? Math.round(sub * val / 100) : val;
+                                                const net = sub - discount;
+                                                const finalAmount = isPercentage ? Math.round(net * 1.18) : net;
+                                                return (finalAmount - quote.advanceAmount!).toLocaleString('en-IN');
+                                            })()}
                                         </span>
                                     </div>
                                 </>
@@ -319,7 +377,15 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                 <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
                                     <span className="font-bold uppercase tracking-wider">Grand Total</span>
                                     <span className="font-bold text-green-400">
-                                        ₹{Math.round((totalPrice(quote.items) - (quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100))) * 1.18).toLocaleString('en-IN')}
+                                        ₹{(() => {
+                                            const sub = totalPrice(quote.items);
+                                            const isPercentage = quote.globalDiscountType === 'percentage';
+                                            const val = quote.globalDiscountValue || 0;
+                                            const discount = isPercentage ? Math.round(sub * val / 100) : val;
+                                            const net = sub - discount;
+                                            const finalAmount = isPercentage ? Math.round(net * 1.18) : net;
+                                            return finalAmount.toLocaleString('en-IN');
+                                        })()}
                                     </span>
                                 </div>
                             )}
@@ -331,8 +397,12 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                 <span>Total Amount</span>
                                 <span className="text-green-400 text-lg">
                                     ₹{(() => {
-                                        const baseAmount = totalPrice(quote.items) - Math.round(totalPrice(quote.items) * (quote.globalDiscountValue || 0) / 100);
-                                        const finalAmount = quote.globalDiscountType === 'flat' ? baseAmount : Math.round(baseAmount * 1.18);
+                                        const sub = totalPrice(quote.items);
+                                        const isPercentage = quote.globalDiscountType === 'percentage';
+                                        const val = quote.globalDiscountValue || 0;
+                                        const discount = isPercentage ? Math.round(sub * val / 100) : val;
+                                        const net = sub - discount;
+                                        const finalAmount = isPercentage ? Math.round(net * 1.18) : net;
                                         return finalAmount.toLocaleString('en-IN');
                                     })()}
                                 </span>

@@ -4,6 +4,7 @@ import { Product } from '../types';
 import { CartIcon } from './Icons';
 
 interface ProductCardProps {
+    key?: any;
     product: Product;
     onAddClick: () => void;
 }

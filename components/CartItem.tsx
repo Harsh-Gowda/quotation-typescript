@@ -4,6 +4,7 @@ import { QuoteItem } from '../types';
 import { EditIcon } from './Icons';
 
 interface CartItemProps {
+    key?: any;
     item: QuoteItem;
     onRemove: () => void;
     onQtyChange: (q: number) => void;
