@@ -72,5 +72,55 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'Fans',
     image: 'https://images.unsplash.com/photo-1523413555809-0fb868e65320?auto=format&fit=crop&q=80&w=400',
     gallery: []
+  },
+  {
+    id: 'F4',
+    name: 'Magnific Surface Mounted',
+    modelNumber: 'FS-SM-22',
+    description: 'Size: 1200mm Lamp: LED 3000k Finishing: White',
+    price: 2200,
+    category: 'Lights',
+    image: 'https://images.unsplash.com/photo-1523413555809-0fb868e65320?auto=format&fit=crop&q=80&w=400',
+    gallery: []
+  },
+  {
+    id: 'F5',
+    name: 'Magnific pendant light',
+    modelNumber: 'LP-PL-12',
+    description: 'Size: 1200mm Lamp: LED 3000k Finishing: White',
+    price: 4500,
+    category: 'Lights',
+    image: 'https://images.unsplash.com/photo-1523413555809-0fb868e65320?auto=format&fit=crop&q=80&w=400',
+    gallery: []
+  },
+  {
+    id: 'F6',
+    name: 'Magnific pendant light',
+    modelNumber: 'LP-PL-12',
+    description: 'Size: 1200mm Lamp: LED 3000k Finishing: White',
+    price: 4500,
+    category: 'Lights',
+    image: 'https://images.unsplash.com/photo-1523413555809-0fb868e65320?auto=format&fit=crop&q=80&w=400',
+    gallery: []
+  },
+  {
+    id: 'F7',
+    name: 'Magnific pendant light',
+    modelNumber: 'LP-PL-12',
+    description: 'Size: 1200mm Lamp: LED 3000k Finishing: White',
+    price: 4500,
+    category: 'Lights',
+    image: 'https://images.unsplash.com/photo-1523413555809-0fb868e65320?auto=format&fit=crop&q=80&w=400',
+    gallery: []
+  },
+  {
+    id: 'F8',
+    name: 'Magnific pendant light',
+    modelNumber: 'LP-PL-12',
+    description: 'Size: 1200mm Lamp: LED 3000k Finishing: White',
+    price: 4500,
+    category: 'Lights',
+    image: 'https://images.unsplash.com/photo-1523413555809-0fb868e65320?auto=format&fit=crop&q=80&w=400',
+    gallery: []
   }
 ];

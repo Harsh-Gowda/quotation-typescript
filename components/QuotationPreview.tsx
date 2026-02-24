@@ -1,5 +1,5 @@
 import React from 'react';
-import { Quotation } from '../types';
+import { Quotation, Customer } from '../types';
 import { BackIcon, SaveIcon, ExcelIcon, CheckIcon } from './Icons';
 import QuotationSheet from './QuotationSheet';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,10 @@ interface QuotationPreviewProps {
     isSaved: boolean;
     onSave: () => void;
     onExportExcel: () => void;
+    onEdit: () => void;
+    onUpdateCustomer?: (updates: Partial<Customer>) => void;
+    onUpdateItemQuantity?: (index: number, quantity: number) => void;
+    onUpdateItemPlace?: (index: number, placeName: string) => void;
     onNewQuote: () => void;
     isPublicMode: boolean;
     isCustomerView: boolean;
@@ -18,7 +22,7 @@ interface QuotationPreviewProps {
 }
 
 export default function QuotationPreview({
-    finalQuote, subtotal, isSaved, onSave, onExportExcel, onNewQuote,
+    finalQuote, subtotal, isSaved, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onNewQuote,
     isPublicMode, isCustomerView, qrCodeUrl, shareUrl
 }: QuotationPreviewProps) {
     const navigate = useNavigate();
@@ -56,6 +60,10 @@ export default function QuotationPreview({
                     qrCodeUrl={qrCodeUrl}
                     shareUrl={shareUrl}
                     isCustomerView={isCustomerView}
+                    isEditable={!isPublicMode}
+                    onUpdateCustomer={onUpdateCustomer}
+                    onUpdateItemQuantity={onUpdateItemQuantity}
+                    onUpdateItemPlace={onUpdateItemPlace}
                 />
             </div>
         </div>

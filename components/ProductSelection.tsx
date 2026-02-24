@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface ProductSelectionProps {
     cart: QuoteItem[];
+    products: Product[];
     addToCart: (product: Product, options: any) => void;
     removeFromCart: (productId: string, options: any) => void;
     updateQuantity: (productId: string, options: any, qty: number) => void;
@@ -20,12 +21,14 @@ interface ProductSelectionProps {
     setDiscountValue: (val: number) => void;
     onGenerateQuote: () => void;
     isGenerating: boolean;
+    isEditMode?: boolean;
+    editingQuoteId?: string | null;
 }
 
 export default function ProductSelection({
-    cart, addToCart, removeFromCart, updateQuantity, updateCartItem, subtotal,
+    cart, products, addToCart, removeFromCart, updateQuantity, updateCartItem, subtotal,
     discountType, setDiscountType, discountValue, setDiscountValue,
-    onGenerateQuote, isGenerating
+    onGenerateQuote, isGenerating, isEditMode, editingQuoteId
 }: ProductSelectionProps) {
 
     const navigate = useNavigate();
@@ -54,12 +57,13 @@ export default function ProductSelection({
 
     const filteredProducts = useMemo(() => {
         const term = searchTerm.toLowerCase().trim();
-        let filtered = MOCK_PRODUCTS;
+        let filtered = products;
 
         // Apply search filter
         if (term) {
             filtered = filtered.filter(p =>
                 p.name.toLowerCase().includes(term) ||
+                p.modelNumber.toLowerCase().includes(term) ||
                 p.description.toLowerCase().includes(term) ||
                 p.category.toLowerCase().includes(term)
             );
@@ -103,6 +107,21 @@ export default function ProductSelection({
                         <BackIcon /> <span className="ml-1">Registration</span>
                     </button>
                 </div>
+
+                {/* Edit Mode Banner */}
+                {isEditMode && editingQuoteId && (
+                    <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg shadow-sm">
+                        <div className="flex items-center">
+                            <svg className="w-5 h-5 text-amber-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            <div>
+                                <p className="text-sm font-bold text-amber-800">Editing Quotation: {editingQuoteId}</p>
+                                <p className="text-xs text-amber-600">Make your changes and click "Update Quotation" to save</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Combined Filter Section */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
@@ -542,7 +561,7 @@ export default function ProductSelection({
                                 disabled={isGenerating}
                                 className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-all shadow-md flex items-center justify-center disabled:opacity-50"
                             >
-                                {isGenerating ? "Processing..." : "Generate Quote"}
+                                {isGenerating ? "Processing..." : (isEditMode ? "Update Quotation" : "Generate Quote")}
                             </button>
                         </div>
                     )}

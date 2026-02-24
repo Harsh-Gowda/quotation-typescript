@@ -1,6 +1,7 @@
 
-import React from 'react';
-import { Quotation, QuoteItem } from '../types';
+
+import React, { useState } from 'react';
+import { Quotation, QuoteItem, Customer } from '../types';
 import { totalPrice } from '../utils';
 
 interface QuotationSheetProps {
@@ -9,9 +10,47 @@ interface QuotationSheetProps {
     qrCodeUrl?: string | null;
     shareUrl?: string | null;
     isCustomerView?: boolean;
+    isEditable?: boolean;
+    onUpdateCustomer?: (updates: Partial<Customer>) => void;
+    onUpdateItemQuantity?: (index: number, quantity: number) => void;
+    onUpdateItemPlace?: (index: number, placeName: string) => void;
 }
 
-export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView }: QuotationSheetProps) {
+export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace }: QuotationSheetProps) {
+    const [editingField, setEditingField] = useState<string | null>(null);
+    const [tempValue, setTempValue] = useState<string>('');
+
+    const startEdit = (field: string, currentValue: string | number) => {
+        if (!isEditable) return;
+        setEditingField(field);
+        setTempValue(String(currentValue));
+    };
+
+    const saveEdit = (field: string) => {
+        if (!onUpdateCustomer && !onUpdateItemQuantity && !onUpdateItemPlace) return;
+
+        const [type, ...rest] = field.split('-');
+
+        if (type === 'customer') {
+            const fieldName = rest[0];
+            onUpdateCustomer?.({ [fieldName]: tempValue });
+        } else if (type === 'qty') {
+            const index = parseInt(rest[0]);
+            onUpdateItemQuantity?.(index, parseInt(tempValue) || 1);
+        } else if (type === 'place') {
+            const index = parseInt(rest[0]);
+            onUpdateItemPlace?.(index, tempValue);
+        }
+
+        setEditingField(null);
+        setTempValue('');
+    };
+
+    const cancelEdit = () => {
+        setEditingField(null);
+        setTempValue('');
+    };
+
     return (
         <div className="flex flex-col min-h-full bg-white">
             {/* Top Banner */}
@@ -46,13 +85,59 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
 
                 {!isCustomerView && (
                     <div className="mb-6 text-[12px]">
-                        <div className="flex space-x-1">
+                        <div className="flex space-x-1 items-center group">
                             <span className="font-bold w-12 text-slate-900 whitespace-nowrap">To:</span>
-                            <span className="font-bold text-slate-800 uppercase">{quote.customer.name}</span>
+                            {editingField === 'customer-name' ? (
+                                <div className="flex items-center space-x-1">
+                                    <input
+                                        type="text"
+                                        value={tempValue}
+                                        onChange={(e) => setTempValue(e.target.value)}
+                                        onBlur={() => saveEdit('customer-name')}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') saveEdit('customer-name');
+                                            if (e.key === 'Escape') cancelEdit();
+                                        }}
+                                        className="font-bold text-slate-800 uppercase border-b-2 border-indigo-500 outline-none bg-transparent px-1"
+                                        autoFocus
+                                    />
+                                </div>
+                            ) : (
+                                <span
+                                    className="font-bold text-slate-800 uppercase cursor-pointer hover:bg-indigo-50 px-1 rounded"
+                                    onClick={() => startEdit('customer-name', quote.customer.name)}
+                                >
+                                    {quote.customer.name}
+                                    {isEditable && <span className="ml-1 text-indigo-400 opacity-0 group-hover:opacity-100 text-[10px]">✏️</span>}
+                                </span>
+                            )}
                         </div>
-                        <div className="flex space-x-1">
+                        <div className="flex space-x-1 items-center group">
                             <span className="font-bold w-12 text-slate-900 whitespace-nowrap">Phone:</span>
-                            <span className="font-medium text-slate-700">{quote.customer.phone}</span>
+                            {editingField === 'customer-phone' ? (
+                                <div className="flex items-center space-x-1">
+                                    <input
+                                        type="text"
+                                        value={tempValue}
+                                        onChange={(e) => setTempValue(e.target.value)}
+                                        onBlur={() => saveEdit('customer-phone')}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') saveEdit('customer-phone');
+                                            if (e.key === 'Escape') cancelEdit();
+                                        }}
+                                        className="font-medium text-slate-700 border-b-2 border-indigo-500 outline-none bg-transparent px-1"
+                                        autoFocus
+                                    />
+                                </div>
+                            ) : (
+                                <span
+                                    className="font-medium text-slate-700 cursor-pointer hover:bg-indigo-50 px-1 rounded"
+                                    onClick={() => startEdit('customer-phone', quote.customer.phone)}
+                                >
+                                    {quote.customer.phone}
+                                    {isEditable && <span className="ml-1 text-indigo-400 opacity-0 group-hover:opacity-100 text-[10px]">✏️</span>}
+                                </span>
+                            )}
                         </div>
                     </div>
                 )}
@@ -99,11 +184,57 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                                     </td>
                                 )}
 
-                                <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900">{i.quantity}</td>
+                                <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900 group">
+                                    {editingField === `qty-${idx}` ? (
+                                        <input
+                                            type="number"
+                                            value={tempValue}
+                                            onChange={(e) => setTempValue(e.target.value)}
+                                            onBlur={() => saveEdit(`qty-${idx}`)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') saveEdit(`qty-${idx}`);
+                                                if (e.key === 'Escape') cancelEdit();
+                                            }}
+                                            className="w-12 text-center border-b-2 border-indigo-500 outline-none bg-transparent font-bold"
+                                            autoFocus
+                                            min="1"
+                                        />
+                                    ) : (
+                                        <span
+                                            className="cursor-pointer hover:bg-indigo-50 px-2 py-1 rounded inline-block"
+                                            onClick={() => startEdit(`qty-${idx}`, i.quantity)}
+                                        >
+                                            {i.quantity}
+                                            {isEditable && <span className="ml-1 text-indigo-400 opacity-0 group-hover:opacity-100 text-[10px]">✏️</span>}
+                                        </span>
+                                    )}
+                                </td>
 
                                 {!isCustomerView && (
-                                    <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[11px] font-bold text-slate-900 leading-tight">
-                                        {i.placeName || '-'}
+                                    <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[11px] font-bold text-slate-900 leading-tight group">
+                                        {editingField === `place-${idx}` ? (
+                                            <input
+                                                type="text"
+                                                value={tempValue}
+                                                onChange={(e) => setTempValue(e.target.value)}
+                                                onBlur={() => saveEdit(`place-${idx}`)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') saveEdit(`place-${idx}`);
+                                                    if (e.key === 'Escape') cancelEdit();
+                                                }}
+                                                className="w-full text-center border-b-2 border-indigo-500 outline-none bg-transparent font-bold"
+                                                autoFocus
+                                                placeholder="Area"
+                                            />
+                                        ) : (
+                                            <span
+                                                className="cursor-pointer hover:bg-indigo-50 px-2 py-1 rounded inline-block"
+                                                onClick={() => startEdit(`place-${idx}`, i.placeName || '')}
+                                            >
+                                                {i.placeName || '-'}
+                                                {isEditable && <span className="ml-1 text-indigo-400 opacity-0 group-hover:opacity-100 text-[10px]">✏️</span>}
+                                            </span>
+                                        )}
                                     </td>
                                 )}
 
@@ -411,12 +542,12 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                     )}
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-slate-200 print-compact print:mt-1 print:pt-1">
-                    <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-1 gap-10 print:gap-2">
+                <div className="mt-6 pt-4 border-t border-slate-200 print-compact print:mt-1 print:pt-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6 print:gap-3">
                         {/* Banking Details */}
-                        <div className="space-y-4 no-print-break">
-                            <h4 className="text-sm font-bold text-slate-900 border-b pb-2 uppercase tracking-tight">Banking Details (RTGS / NEFT)</h4>
-                            <div className="space-y-2 text-xs text-slate-600">
+                        <div className="space-y-3 no-print-break">
+                            <h4 className="text-sm font-bold text-slate-900 border-b pb-1.5 uppercase tracking-tight">Banking Details (RTGS / NEFT)</h4>
+                            <div className="space-y-1.5 text-xs text-slate-600">
                                 <div className="flex">
                                     <span className="w-28 font-bold text-slate-400">Company Name</span>
                                     <span className="font-bold text-slate-800">Magnific Home Appliances</span>
@@ -440,23 +571,33 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                             </div>
                         </div>
 
-                        {/* QR Code / Summary */}
-                        {qrCodeUrl && (
-                            <div className="flex flex-col items-center justify-center p-6 border rounded-2xl bg-slate-50 relative group print:hidden">
+                        {/* Payment QR Code Scanner */}
+                        <div className="flex flex-col items-center no-print-break">
+                            <h4 className="text-sm font-bold text-slate-900 border-b pb-1.5 mb-3 uppercase tracking-tight w-full text-center">UPI Payment</h4>
+                            <img
+                                src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=magnific@axisbank&pn=Magnific%20Home%20Appliances&cu=INR"
+                                alt="Payment QR Code"
+                                className="w-40 h-40 object-contain border-2 border-slate-200 rounded-lg p-2 bg-white"
+                            />
+                            <p className="text-xs font-bold text-indigo-700 mt-2 uppercase tracking-wide">Scan to Pay</p>
+                        </div>
+                    </div>
+
+                    {/* Original Quote QR Code - Only show if available */}
+                    {qrCodeUrl && (
+                        <div className="mt-6 flex justify-center print:hidden">
+                            <div className="flex flex-col items-center justify-center p-4 border rounded-xl bg-slate-50 relative group">
                                 {shareUrl ? (
                                     <a href={shareUrl} target="_blank" rel="noopener noreferrer">
-                                        <img src={qrCodeUrl} alt="Magnific QR" className="w-28 h-28 mb-3 hover:scale-105 transition-transform cursor-pointer" />
+                                        <img src={qrCodeUrl} alt="Magnific QR" className="w-24 h-24 mb-2 hover:scale-105 transition-transform cursor-pointer" />
                                     </a>
                                 ) : (
-                                    <img src={qrCodeUrl} alt="Magnific QR" className="w-28 h-28 mb-3" />
+                                    <img src={qrCodeUrl} alt="Magnific QR" className="w-24 h-24 mb-2" />
                                 )}
-                                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Scan Quote Online</p>
-                                <div className="absolute top-2 right-2 opacity-5">
-                                    <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" /></svg>
-                                </div>
+                                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">View Quote Online</p>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {/* Terms & Conditions */}
                     <div className="mt-6 pt-4 border-t border-slate-100 no-print-break print:mt-1 print:pt-1">

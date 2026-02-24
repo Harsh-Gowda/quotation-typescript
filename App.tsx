@@ -7,6 +7,7 @@ import QRCode from 'qrcode';
 import * as XLSX from 'xlsx';
 import { totalPrice } from './utils';
 import { HistoryIcon } from './components/Icons';
+import { supabase } from './services/supabase';
 
 // Components
 import CustomerEntry from './components/CustomerEntry';
@@ -27,11 +28,16 @@ export default function App() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [savedQuotes, setSavedQuotes] = useState<Quotation[]>([]);
   const [isSaved, setIsSaved] = useState(false);
+  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
 
   const [isCustomerView, setIsCustomerView] = useState(false);
   const [isPublicMode, setIsPublicMode] = useState(false);
   const [discountType, setDiscountType] = useState<'flat' | 'percentage' | null>(null);
   const [discountValue, setDiscountValue] = useState<number>(0);
+
+  // Edit Mode State
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -39,9 +45,8 @@ export default function App() {
       try { setSavedQuotes(JSON.parse(raw)); } catch (e) { console.error(e); }
     }
 
-    // Handle QR Data / Share Link
     const params = new URLSearchParams(window.location.search);
-    const data = params.get('data');
+    const dataParam = params.get('data');
     const viewMode = params.get('view');
 
     if (viewMode === 'customer') {
@@ -49,18 +54,76 @@ export default function App() {
       setIsCustomerView(true);
     }
 
-    if (data) {
-      try {
-        const decoded = JSON.parse(decodeURIComponent(escape(atob(data))));
-        const restoredItems = decoded.items.map((item: any) => ({
-          ...item,
-          product: MOCK_PRODUCTS.find(p => p.id === item.productId)
-        })).filter((item: any) => item.product);
+    // Fetch Products from Supabase
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*');
 
-        setFinalQuote({ ...decoded, items: restoredItems });
-        navigate('/preview');
-      } catch (e) { console.error("Failed to decode QR data", e); }
-    }
+      if (error) {
+        console.error('Error fetching products from Supabase:', error);
+        return;
+      }
+
+      console.log('Supabase Data Received:', data);
+
+      if (data) {
+        // Map snake_case from DB to camelCase in Product interface
+        const mappedProducts: Product[] = data.map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          modelNumber: p.model_number,
+          description: p.description,
+          price: parseFloat(p.price),
+          category: p.category,
+          image: p.image,
+          gallery: p.gallery || [],
+          suitableFor: p.suitable_for,
+          motorSpec: p.motor_spec,
+          noOfBlades: p.no_of_blades,
+          bodyColor: p.body_color,
+          bladeFinish: p.blade_finish,
+          lightOption: p.light_option,
+          sweep: p.sweep,
+          airflow: p.airflow,
+          heightOfFan: p.height_of_fan,
+          remoteControl: p.remote_control,
+          summerWinterOption: p.summer_winter_option,
+          bladeMechanism: p.blade_mechanism,
+          reversibleBlade: p.reversible_blade,
+          oscillationRotation: p.oscillation_rotation,
+          bladeType: p.blade_type,
+          suitablePlace: p.suitable_place,
+          size: p.size,
+          lamp: p.lamp,
+          finishing: p.finishing
+        }));
+
+        console.log('Mapped Products:', mappedProducts);
+
+        if (mappedProducts.length > 0) {
+          setProducts(mappedProducts);
+        }
+
+        // If we have data in URL, wait for products to load before restoring
+        if (dataParam) {
+          try {
+            const decoded = JSON.parse(decodeURIComponent(escape(atob(dataParam))));
+            const restoredItems = decoded.items.map((item: any) => ({
+              ...item,
+              product: mappedProducts.find(prod => prod.id === item.productId)
+            })).filter((item: any) => item.product);
+
+            setFinalQuote({ ...decoded, items: restoredItems });
+            navigate('/preview');
+          } catch (e) {
+            console.error("Failed to decode QR data", e);
+          }
+        }
+      }
+    };
+
+    fetchProducts();
   }, [navigate]);
 
   const addToCart = (product: Product, options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number, customDescription?: string, extraNote?: string }) => {
@@ -177,7 +240,7 @@ export default function App() {
     const aiSummary = "Generated Quote";
 
     const quote: Quotation = {
-      id: `MQ-${Date.now().toString().slice(-6)}`,
+      id: isEditMode && editingQuoteId ? editingQuoteId : `MQ-${Date.now().toString().slice(-6)}`,
       customer,
       items: cart,
       date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -219,12 +282,74 @@ export default function App() {
     setIsGenerating(false);
   };
 
+  const handleEditQuotation = () => {
+    if (!finalQuote) return;
+
+    // Load quotation data into state
+    setCustomer(finalQuote.customer);
+    setCart(finalQuote.items);
+    setDiscountType(finalQuote.globalDiscountType || null);
+    setDiscountValue(finalQuote.globalDiscountValue || 0);
+
+    // Set edit mode
+    setIsEditMode(true);
+    setEditingQuoteId(finalQuote.id);
+
+    // Navigate to catalog
+    navigate('/catalog');
+  };
+
+  // Inline editing handlers
+  const handleUpdateCustomer = (updates: Partial<Customer>) => {
+    if (!finalQuote) return;
+    setFinalQuote({
+      ...finalQuote,
+      customer: { ...finalQuote.customer, ...updates }
+    });
+    setIsSaved(false); // Mark as unsaved when edited
+  };
+
+  const handleUpdateItemQuantity = (index: number, quantity: number) => {
+    if (!finalQuote) return;
+    const updatedItems = [...finalQuote.items];
+    updatedItems[index] = { ...updatedItems[index], quantity };
+    setFinalQuote({
+      ...finalQuote,
+      items: updatedItems
+    });
+    setIsSaved(false);
+  };
+
+  const handleUpdateItemPlace = (index: number, placeName: string) => {
+    if (!finalQuote) return;
+    const updatedItems = [...finalQuote.items];
+    updatedItems[index] = { ...updatedItems[index], placeName };
+    setFinalQuote({
+      ...finalQuote,
+      items: updatedItems
+    });
+    setIsSaved(false);
+  };
+
   const saveToLocal = () => {
     if (!finalQuote) return;
-    const newList = [finalQuote, ...savedQuotes];
+
+    let newList: Quotation[];
+    if (isEditMode && editingQuoteId) {
+      // Update existing quotation
+      newList = savedQuotes.map(q => q.id === editingQuoteId ? finalQuote : q);
+    } else {
+      // Add new quotation
+      newList = [finalQuote, ...savedQuotes];
+    }
+
     setSavedQuotes(newList);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
     setIsSaved(true);
+
+    // Reset edit mode
+    setIsEditMode(false);
+    setEditingQuoteId(null);
   };
 
   const deleteSaved = (e: React.MouseEvent, id: string) => {
@@ -378,6 +503,7 @@ export default function App() {
 
           <Route path="/catalog" element={
             <ProductSelection
+              products={products}
               cart={cart}
               subtotal={subtotal}
               addToCart={addToCart}
@@ -390,6 +516,8 @@ export default function App() {
               setDiscountValue={setDiscountValue}
               onGenerateQuote={handleCreateQuotation}
               isGenerating={isGenerating}
+              isEditMode={isEditMode}
+              editingQuoteId={editingQuoteId}
             />
           } />
 
@@ -401,6 +529,10 @@ export default function App() {
                 isSaved={isSaved}
                 onSave={saveToLocal}
                 onExportExcel={handleExportExcel}
+                onEdit={handleEditQuotation}
+                onUpdateCustomer={handleUpdateCustomer}
+                onUpdateItemQuantity={handleUpdateItemQuantity}
+                onUpdateItemPlace={handleUpdateItemPlace}
                 onNewQuote={() => {
                   setCart([]);
                   setCustomer({ name: '', email: '', phone: '', address: '', company: '' });
@@ -408,6 +540,8 @@ export default function App() {
                   setQrCodeUrl(null);
                   setDiscountType(null);
                   setDiscountValue(0);
+                  setIsEditMode(false);
+                  setEditingQuoteId(null);
                   navigate('/');
                 }}
                 isPublicMode={isPublicMode}
@@ -433,6 +567,15 @@ export default function App() {
                 setDiscountValue(q.globalDiscountValue || 0);
                 setIsSaved(true);
                 navigate('/preview');
+              }}
+              onEdit={(q) => {
+                setCustomer(q.customer);
+                setCart(q.items);
+                setDiscountType(q.globalDiscountType || null);
+                setDiscountValue(q.globalDiscountValue || 0);
+                setIsEditMode(true);
+                setEditingQuoteId(q.id);
+                navigate('/catalog');
               }}
               onDelete={deleteSaved}
             />
