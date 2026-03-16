@@ -7,8 +7,6 @@ import { totalPrice } from '../utils';
 interface QuotationSheetProps {
     quote: Quotation;
     subtotal: number;
-    qrCodeUrl?: string | null;
-    shareUrl?: string | null;
     isCustomerView?: boolean;
     isEditable?: boolean;
     onUpdateCustomer?: (updates: Partial<Customer>) => void;
@@ -16,7 +14,7 @@ interface QuotationSheetProps {
     onUpdateItemPlace?: (index: number, placeName: string) => void;
 }
 
-export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace }: QuotationSheetProps) {
+export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace }: QuotationSheetProps) {
     const [editingField, setEditingField] = useState<string | null>(null);
     const [tempValue, setTempValue] = useState<string>('');
 
@@ -583,21 +581,6 @@ export default function QuotationSheet({ quote, subtotal, qrCodeUrl, shareUrl, i
                         </div>
                     </div>
 
-                    {/* Original Quote QR Code - Only show if available */}
-                    {qrCodeUrl && (
-                        <div className="mt-6 flex justify-center print:hidden">
-                            <div className="flex flex-col items-center justify-center p-4 border rounded-xl bg-slate-50 relative group">
-                                {shareUrl ? (
-                                    <a href={shareUrl} target="_blank" rel="noopener noreferrer">
-                                        <img src={qrCodeUrl} alt="Magnific QR" className="w-24 h-24 mb-2 hover:scale-105 transition-transform cursor-pointer" />
-                                    </a>
-                                ) : (
-                                    <img src={qrCodeUrl} alt="Magnific QR" className="w-24 h-24 mb-2" />
-                                )}
-                                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">View Quote Online</p>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Terms & Conditions */}
                     <div className="mt-6 pt-4 border-t border-slate-100 no-print-break print:mt-1 print:pt-1">

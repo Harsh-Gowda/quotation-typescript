@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Product, QuoteItem } from '../types';
-import { MOCK_PRODUCTS } from '../constants';
 import { BackIcon, SearchIcon, CartIcon } from './Icons';
 import ProductCard from './ProductCard';
 import ProductModal from './ProductModal';
@@ -23,12 +22,13 @@ interface ProductSelectionProps {
     isGenerating: boolean;
     isEditMode?: boolean;
     editingQuoteId?: string | null;
+    isLoading?: boolean;
 }
 
 export default function ProductSelection({
     cart, products, addToCart, removeFromCart, updateQuantity, updateCartItem, subtotal,
     discountType, setDiscountType, discountValue, setDiscountValue,
-    onGenerateQuote, isGenerating, isEditMode, editingQuoteId
+    onGenerateQuote, isGenerating, isEditMode, editingQuoteId, isLoading
 }: ProductSelectionProps) {
 
     const navigate = useNavigate();
@@ -96,7 +96,7 @@ export default function ProductSelection({
         }
 
         return filtered;
-    }, [searchTerm, categoryFilter, colorFilter, sizeFilter, finishingFilter]);
+    }, [searchTerm, categoryFilter, colorFilter, sizeFilter, finishingFilter, products]);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -410,9 +410,38 @@ export default function ProductSelection({
                     )}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    {filteredProducts.map(p => (
-                        <ProductCard key={p.id} product={p} onAddClick={() => setSelectedProduct(p)} />
-                    ))}
+                    {isLoading ? (
+                        <div className="col-span-full py-20 flex flex-col items-center justify-center space-y-4">
+                            <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                            <p className="text-slate-500 font-bold animate-pulse">Fetching Magnific Catalog...</p>
+                        </div>
+                    ) : filteredProducts.length > 0 ? (
+                        filteredProducts.map(p => (
+                            <ProductCard key={p.id} product={p} onAddClick={() => setSelectedProduct(p)} />
+                        ))
+                    ) : (
+                        <div className="col-span-full py-20 bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center p-8">
+                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                                <SearchIcon />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800">No products found</h3>
+                            <p className="text-slate-500 max-w-xs mt-2">Try adjusting your search or filters to find what you're looking for.</p>
+                            {(searchTerm || categoryFilter !== 'All' || colorFilter !== 'All' || sizeFilter !== 'All' || finishingFilter !== 'All') && (
+                                <button
+                                    onClick={() => {
+                                        setCategoryFilter('All');
+                                        setColorFilter('All');
+                                        setSizeFilter('All');
+                                        setFinishingFilter('All');
+                                        setSearchTerm('');
+                                    }}
+                                    className="mt-6 px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md"
+                                >
+                                    Clear All Filters
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
             {(selectedProduct || editingIndex !== null) && (

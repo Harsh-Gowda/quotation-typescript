@@ -23,7 +23,7 @@ export default function CustomerEntry({ customer, setCustomer }: CustomerEntryPr
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Full Name</label>
-                                <input required type="text" className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 text-slate-900 font-medium transition-all" placeholder="Ex: Harsh" value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} />
+                                <input required type="text" className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 text-slate-900 font-medium transition-all" placeholder="Ex: name" value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })} />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Company / Firm</label>
@@ -33,7 +33,7 @@ export default function CustomerEntry({ customer, setCustomer }: CustomerEntryPr
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Email Address</label>
-                                <input type="email" className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 text-slate-900 font-medium transition-all" placeholder="harsh@example.com" value={customer.email} onChange={e => setCustomer({ ...customer, email: e.target.value })} />
+                                <input type="email" className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 text-slate-900 font-medium transition-all" placeholder="name@example.com" value={customer.email} onChange={e => setCustomer({ ...customer, email: e.target.value })} />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Phone Number</label>

@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Customer, Product, QuoteItem, Quotation } from './types';
-import { MOCK_PRODUCTS, STORAGE_KEY } from './constants';
-import QRCode from 'qrcode';
+import { STORAGE_KEY } from './constants';
 import * as XLSX from 'xlsx';
 import { totalPrice } from './utils';
 import { HistoryIcon } from './components/Icons';
@@ -24,11 +23,10 @@ export default function App() {
   const [cart, setCart] = useState<QuoteItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [finalQuote, setFinalQuote] = useState<Quotation | null>(null);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [savedQuotes, setSavedQuotes] = useState<Quotation[]>([]);
   const [isSaved, setIsSaved] = useState(false);
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   const [isCustomerView, setIsCustomerView] = useState(false);
   const [isPublicMode, setIsPublicMode] = useState(false);
@@ -62,6 +60,7 @@ export default function App() {
 
       if (error) {
         console.error('Error fetching products from Supabase:', error);
+        setIsLoadingProducts(false);
         return;
       }
 
@@ -121,6 +120,7 @@ export default function App() {
           }
         }
       }
+      setIsLoadingProducts(false);
     };
 
     fetchProducts();
@@ -254,29 +254,6 @@ export default function App() {
 
     setFinalQuote(quote);
     setIsSaved(false);
-
-    // Generate Shareable Link
-    const minifiedItems = quote.items.map(i => ({
-      productId: i.product.id,
-      quantity: i.quantity,
-      placeName: i.placeName,
-      size: i.size,
-      color: i.color,
-      lamp: i.lamp,
-      discount: i.discount,
-      customDescription: i.customDescription,
-      extraNote: i.extraNote
-    }));
-
-    const payload = btoa(unescape(encodeURIComponent(JSON.stringify({ ...quote, items: minifiedItems }))));
-    const baseUrl = window.location.origin + window.location.pathname;
-    const link = `${baseUrl}?data=${payload}&view=customer`; // Default to customer view
-    setShareUrl(link);
-
-    // Generate QR
-    QRCode.toDataURL(link, { margin: 2, scale: 10 })
-      .then(url => setQrCodeUrl(url))
-      .catch(err => console.error(err));
 
     navigate('/preview');
     setIsGenerating(false);
@@ -467,13 +444,9 @@ export default function App() {
       {!isCustomerView && (
         <header className="bg-white border-b border-slate-200 sticky top-0 z-40 print:hidden shadow-sm">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => { setIsCustomerView(false); navigate('/'); }}>
+            <div className="flex items-center cursor-pointer" onClick={() => { setIsCustomerView(false); navigate('/'); }}>
               <div className="logo">
-                <img src="./assets/magnific-web.png" alt="magnific" width="100px" height="100px" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none">MAGNIFIC</h1>
-                <p className="text-[9px] text-slate-500 uppercase tracking-widest font-semibold">Designer Fans & Lights</p>
+                <img src="./assets/magnific-web.png" alt="magnific" className="h-12 w-auto object-contain" />
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -518,6 +491,7 @@ export default function App() {
               isGenerating={isGenerating}
               isEditMode={isEditMode}
               editingQuoteId={editingQuoteId}
+              isLoading={isLoadingProducts}
             />
           } />
 
@@ -537,7 +511,6 @@ export default function App() {
                   setCart([]);
                   setCustomer({ name: '', email: '', phone: '', address: '', company: '' });
                   setFinalQuote(null);
-                  setQrCodeUrl(null);
                   setDiscountType(null);
                   setDiscountValue(0);
                   setIsEditMode(false);
@@ -546,8 +519,6 @@ export default function App() {
                 }}
                 isPublicMode={isPublicMode}
                 isCustomerView={isCustomerView}
-                qrCodeUrl={qrCodeUrl}
-                shareUrl={shareUrl}
               />
             ) : (
               // Redirect if no quote

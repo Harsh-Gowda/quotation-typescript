@@ -17,13 +17,11 @@ interface QuotationPreviewProps {
     onNewQuote: () => void;
     isPublicMode: boolean;
     isCustomerView: boolean;
-    qrCodeUrl: string | null;
-    shareUrl: string | null;
 }
 
 export default function QuotationPreview({
     finalQuote, subtotal, isSaved, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onNewQuote,
-    isPublicMode, isCustomerView, qrCodeUrl, shareUrl
+    isPublicMode, isCustomerView
 }: QuotationPreviewProps) {
     const navigate = useNavigate();
 
@@ -57,8 +55,6 @@ export default function QuotationPreview({
                 <QuotationSheet
                     quote={finalQuote}
                     subtotal={subtotal}
-                    qrCodeUrl={qrCodeUrl}
-                    shareUrl={shareUrl}
                     isCustomerView={isCustomerView}
                     isEditable={!isPublicMode}
                     onUpdateCustomer={onUpdateCustomer}
