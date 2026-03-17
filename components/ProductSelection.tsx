@@ -55,9 +55,74 @@ export default function ProductSelection({
     const [sizeSearch, setSizeSearch] = useState('');
     const [finishingSearch, setFinishingSearch] = useState('');
 
+    const categories = useMemo(() => {
+        const counts: { [key: string]: number } = {};
+        products.forEach(p => {
+            if (p.category) {
+                counts[p.category] = (counts[p.category] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [products]);
+
+    const colors = useMemo(() => {
+        const counts: { [key: string]: number } = {};
+        products.forEach(p => {
+            const color = p.bodyColor;
+            if (color) {
+                counts[color] = (counts[color] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [products]);
+
+    const sizes = useMemo(() => {
+        const counts: { [key: string]: number } = {};
+        products.forEach(p => {
+            const size = p.size;
+            if (size) {
+                counts[size] = (counts[size] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [products]);
+
+    const finishes = useMemo(() => {
+        const counts: { [key: string]: number } = {};
+        products.forEach(p => {
+            const finish = p.finishing || p.bodyColor;
+            if (finish) {
+                counts[finish] = (counts[finish] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [products]);
+
     const filteredProducts = useMemo(() => {
+        const specialProducts: Product[] = [
+            {
+                id: 'customization-charge',
+                name: 'Customization Product Charge',
+                modelNumber: 'SRV-CUST',
+                description: 'Charges for customizing the product to specific requirements.',
+                price: 0, // Open price, editable likely through discount or manual edit, or a fixed 0 base
+                category: 'Services',
+                image: 'https://cdn-icons-png.flaticon.com/512/3588/3588647.png', // Generic tool/service icon
+            },
+            {
+                id: 'fan-installation',
+                name: 'Fan Installation',
+                modelNumber: 'SRV-INST',
+                price: 600,
+                category: 'Services',
+                image: '/Assets/products/fan-service.png', // Professional fan installation image
+            }
+        ];
+
+        const allProducts = [...products, ...specialProducts];
+
         const term = searchTerm.toLowerCase().trim();
-        let filtered = products;
+        let filtered = allProducts;
 
         // Apply search filter
         if (term) {
@@ -74,24 +139,27 @@ export default function ProductSelection({
             filtered = filtered.filter(p => p.category === categoryFilter);
         }
 
-        // Apply color filter (searching in description as it's not a direct field)
+        // Apply color filter
         if (colorFilter !== 'All') {
             filtered = filtered.filter(p =>
-                p.description.toLowerCase().includes(colorFilter.toLowerCase())
+                (p.bodyColor || '').toLowerCase().includes(colorFilter.toLowerCase()) ||
+                (p.description || '').toLowerCase().includes(colorFilter.toLowerCase())
             );
         }
 
-        // Apply size filter (searching in description)
+        // Apply size filter
         if (sizeFilter !== 'All') {
             filtered = filtered.filter(p =>
-                p.description.toLowerCase().includes(sizeFilter.toLowerCase())
+                (p.size || '').toLowerCase().includes(sizeFilter.toLowerCase()) ||
+                (p.description || '').toLowerCase().includes(sizeFilter.toLowerCase())
             );
         }
 
-        // Apply finishing filter (searching in description)
+        // Apply finishing filter
         if (finishingFilter !== 'All') {
             filtered = filtered.filter(p =>
-                p.description.toLowerCase().includes(finishingFilter.toLowerCase())
+                (p.finishing || '').toLowerCase().includes(finishingFilter.toLowerCase()) ||
+                (p.description || '').toLowerCase().includes(finishingFilter.toLowerCase())
             );
         }
 
@@ -99,8 +167,8 @@ export default function ProductSelection({
     }, [searchTerm, categoryFilter, colorFilter, sizeFilter, finishingFilter, products]);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:h-[calc(100vh-140px)]">
+            <div className="lg:col-span-2 space-y-6 lg:h-full lg:overflow-y-auto no-scrollbar pb-10">
                 <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-slate-800">Magnific Catalog</h2>
                     <button onClick={() => navigate('/')} className="text-indigo-600 hover:text-indigo-800 flex items-center text-sm font-bold">
@@ -127,20 +195,36 @@ export default function ProductSelection({
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                     <div className="space-y-4">
                         {/* Search Bar */}
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Search Products</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                    <SearchIcon />
+                        <div className="flex flex-col sm:flex-row gap-4 items-end">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Search Products</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <SearchIcon />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all font-medium"
+                                        placeholder="Search by name, description..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
                                 </div>
-                                <input
-                                    type="text"
-                                    className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all font-medium"
-                                    placeholder="Search by name, description..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
                             </div>
+                            <button
+                                onClick={() => setSelectedProduct({
+                                    id: 'custom-item',
+                                    name: '',
+                                    modelNumber: 'CUSTOM',
+                                    description: '',
+                                    price: 0,
+                                    category: 'Custom',
+                                    image: 'https://cdn-icons-png.flaticon.com/512/3588/3588647.png'
+                                })}
+                                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-all shadow-md active:scale-95 flex items-center whitespace-nowrap text-sm h-[42px]"
+                            >
+                                <span className="mr-2 text-lg">+</span> Add Custom Item
+                            </button>
                         </div>
 
                         {/* Multiple Searchable Filter Dropdowns */}
@@ -173,7 +257,14 @@ export default function ProductSelection({
                                                 />
                                             </div>
                                             <div className="max-h-48 overflow-y-auto">
-                                                {['All', 'Fans', 'Lights'].filter(opt => opt.toLowerCase().includes(categorySearch.toLowerCase())).map(option => (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setCategoryFilter('All'); setIsCategoryOpen(false); setCategorySearch(''); }}
+                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${categoryFilter === 'All' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                                >
+                                                    All Products ({products.length})
+                                                </button>
+                                                {Object.entries(categories).filter(([opt]) => opt.toLowerCase().includes(categorySearch.toLowerCase())).map(([option, count]) => (
                                                     <button
                                                         key={option}
                                                         type="button"
@@ -184,7 +275,22 @@ export default function ProductSelection({
                                                         }}
                                                         className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${categoryFilter === option ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
                                                     >
-                                                        {option === 'All' ? 'All Products' : option}
+                                                        {option} ({count})
+                                                        {categoryFilter === option && <span className="float-right">✓</span>}
+                                                    </button>
+                                                ))}
+                                                {['Services', 'Custom'].filter(opt => opt.toLowerCase().includes(categorySearch.toLowerCase())).map(option => (
+                                                    <button
+                                                        key={option}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setCategoryFilter(option);
+                                                            setIsCategoryOpen(false);
+                                                            setCategorySearch('');
+                                                        }}
+                                                        className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${categoryFilter === option ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                                    >
+                                                        {option}
                                                         {categoryFilter === option && <span className="float-right">✓</span>}
                                                     </button>
                                                 ))}
@@ -222,7 +328,14 @@ export default function ProductSelection({
                                                 />
                                             </div>
                                             <div className="max-h-48 overflow-y-auto">
-                                                {['All', 'White', 'Black', 'Gold', 'Silver', 'Bronze'].filter(opt => opt.toLowerCase().includes(colorSearch.toLowerCase())).map(option => (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setColorFilter('All'); setIsColorOpen(false); setColorSearch(''); }}
+                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${colorFilter === 'All' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                                >
+                                                    All Colors
+                                                </button>
+                                                {Object.entries(colors).filter(([opt]) => opt.toLowerCase().includes(colorSearch.toLowerCase())).map(([option, count]) => (
                                                     <button
                                                         key={option}
                                                         type="button"
@@ -233,7 +346,7 @@ export default function ProductSelection({
                                                         }}
                                                         className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${colorFilter === option ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
                                                     >
-                                                        {option === 'All' ? 'All Colors' : option}
+                                                        {option} ({count})
                                                         {colorFilter === option && <span className="float-right">✓</span>}
                                                     </button>
                                                 ))}
@@ -271,7 +384,14 @@ export default function ProductSelection({
                                                 />
                                             </div>
                                             <div className="max-h-48 overflow-y-auto">
-                                                {['All', '24', '36', '48', '52', '60'].filter(opt => opt.toLowerCase().includes(sizeSearch.toLowerCase())).map(option => (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setSizeFilter('All'); setIsSizeOpen(false); setSizeSearch(''); }}
+                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${sizeFilter === 'All' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                                >
+                                                    All Sizes
+                                                </button>
+                                                {Object.entries(sizes).filter(([opt]) => opt.toLowerCase().includes(sizeSearch.toLowerCase())).map(([option, count]) => (
                                                     <button
                                                         key={option}
                                                         type="button"
@@ -282,7 +402,7 @@ export default function ProductSelection({
                                                         }}
                                                         className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${sizeFilter === option ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
                                                     >
-                                                        {option === 'All' ? 'All Sizes' : `${option} Inch`}
+                                                        {option} ({count})
                                                         {sizeFilter === option && <span className="float-right">✓</span>}
                                                     </button>
                                                 ))}
@@ -320,7 +440,14 @@ export default function ProductSelection({
                                                 />
                                             </div>
                                             <div className="max-h-48 overflow-y-auto">
-                                                {['All', 'Matte', 'Glossy', 'Brushed', 'Polished'].filter(opt => opt.toLowerCase().includes(finishingSearch.toLowerCase())).map(option => (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setFinishingFilter('All'); setIsFinishingOpen(false); setFinishingSearch(''); }}
+                                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${finishingFilter === 'All' ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
+                                                >
+                                                    All Finishes
+                                                </button>
+                                                {Object.entries(finishes).filter(([opt]) => opt.toLowerCase().includes(finishingSearch.toLowerCase())).map(([option, count]) => (
                                                     <button
                                                         key={option}
                                                         type="button"
@@ -331,7 +458,7 @@ export default function ProductSelection({
                                                         }}
                                                         className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 transition-colors ${finishingFilter === option ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'}`}
                                                     >
-                                                        {option === 'All' ? 'All Finishes' : option}
+                                                        {option} ({count})
                                                         {finishingFilter === option && <span className="float-right">✓</span>}
                                                     </button>
                                                 ))}
@@ -409,16 +536,17 @@ export default function ProductSelection({
                         </div>
                     )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     {isLoading ? (
                         <div className="col-span-full py-20 flex flex-col items-center justify-center space-y-4">
                             <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
                             <p className="text-slate-500 font-bold animate-pulse">Fetching Magnific Catalog...</p>
                         </div>
                     ) : filteredProducts.length > 0 ? (
-                        filteredProducts.map(p => (
-                            <ProductCard key={p.id} product={p} onAddClick={() => setSelectedProduct(p)} />
-                        ))
+                        filteredProducts.map(p => {
+                            const inCartQty = cart.filter(item => item.product.id === p.id).reduce((sum, item) => sum + item.quantity, 0);
+                            return <ProductCard key={p.id} product={p} onAddClick={() => setSelectedProduct(p)} inCartQty={inCartQty} />;
+                        })
                     ) : (
                         <div className="col-span-full py-20 bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center p-8">
                             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
@@ -466,12 +594,12 @@ export default function ProductSelection({
                     }}
                 />
             )}
-            <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 sticky top-24">
+            <div className="lg:col-span-1 lg:h-full">
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 lg:h-full lg:flex lg:flex-col lg:overflow-y-auto no-scrollbar">
                     <h3 className="text-lg font-bold mb-4 flex items-center border-b pb-2">
                         <CartIcon /> <span className="ml-2">Selection Cart</span>
                     </h3>
-                    <div className="space-y-4 max-h-[400px] overflow-y-auto mb-6 pr-2 no-scrollbar">
+                    <div className="space-y-4 mb-6 pr-2 no-scrollbar">
                         {cart.length === 0 ? <p className="text-slate-400 text-center py-8 italic text-sm">Cart is empty</p> :
                             cart.map((item, idx) => (
                                 <CartItem

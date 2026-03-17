@@ -68,34 +68,40 @@ export default function App() {
 
       if (data) {
         // Map snake_case from DB to camelCase in Product interface
+        const getImageUrl = (img: string) => {
+          if (!img) return '';
+          if (img.startsWith('http')) return img;
+          return `/Assets/products/${img}`;
+        };
+
         const mappedProducts: Product[] = data.map((p: any) => ({
-          id: p.id,
+          id: p.product_id,
           name: p.name,
           modelNumber: p.model_number,
-          description: p.description,
-          price: parseFloat(p.price),
+          description: p.description || '',
+          price: parseFloat(p.showroom_price || '0'),
           category: p.category,
-          image: p.image,
-          gallery: p.gallery || [],
-          suitableFor: p.suitable_for,
-          motorSpec: p.motor_spec,
-          noOfBlades: p.no_of_blades,
-          bodyColor: p.body_color,
-          bladeFinish: p.blade_finish,
-          lightOption: p.light_option,
-          sweep: p.sweep,
-          airflow: p.airflow,
-          heightOfFan: p.height_of_fan,
-          remoteControl: p.remote_control,
-          summerWinterOption: p.summer_winter_option,
-          bladeMechanism: p.blade_mechanism,
-          reversibleBlade: p.reversible_blade,
-          oscillationRotation: p.oscillation_rotation,
-          bladeType: p.blade_type,
-          suitablePlace: p.suitable_place,
-          size: p.size,
-          lamp: p.lamp,
-          finishing: p.finishing
+          image: p.images && p.images.length > 0 ? getImageUrl(p.images[0]) : '',
+          gallery: p.images && p.images.length > 1 ? p.images.slice(1).map(getImageUrl) : [],
+          suitableFor: p.technical_details?.suitable_for,
+          motorSpec: p.technical_details?.motor_spec,
+          noOfBlades: p.technical_details?.no_of_blades,
+          bodyColor: p.body_finish,
+          bladeFinish: p.technical_details?.blade_finish,
+          lightOption: p.technical_details?.light_option,
+          sweep: p.technical_details?.sweep,
+          airflow: p.technical_details?.airflow,
+          heightOfFan: p.technical_details?.height_of_fan,
+          remoteControl: p.technical_details?.remote_control,
+          summerWinterOption: p.technical_details?.summer_winter_option,
+          bladeMechanism: p.technical_details?.blade_mechanism,
+          reversibleBlade: p.technical_details?.reversible_blade,
+          oscillationRotation: p.technical_details?.oscillation_rotation,
+          bladeType: p.technical_details?.blade_type,
+          suitablePlace: p.technical_details?.suitable_place,
+          size: p.technical_details?.size || p.size,
+          lamp: p.technical_details?.lamp,
+          finishing: p.technical_details?.finishing || p.body_finish
         }));
 
         console.log('Mapped Products:', mappedProducts);
@@ -126,7 +132,20 @@ export default function App() {
     fetchProducts();
   }, [navigate]);
 
-  const addToCart = (product: Product, options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number, customDescription?: string, extraNote?: string }) => {
+  const addToCart = (product: Product, options: { 
+    placeName?: string, 
+    size?: string, 
+    color?: string, 
+    lamp?: string, 
+    discount?: number, 
+    customDescription?: string, 
+    extraNote?: string,
+    customPrice?: number,
+    customName?: string,
+    customModelNumber?: string,
+    isCustom?: boolean,
+    quantity?: number
+  }) => {
     const trimmedPlace = options.placeName?.trim() || '';
     const trimmedSize = options.size?.trim() || '';
     const trimmedColor = options.color?.trim() || '';
@@ -134,6 +153,10 @@ export default function App() {
     const trimmedDesc = options.customDescription?.trim() || '';
     const trimmedNote = options.extraNote?.trim() || '';
     const discountVal = options.discount || 0;
+    const cPrice = options.customPrice;
+    const cName = options.customName?.trim() || '';
+    const cModel = options.customModelNumber?.trim() || '';
+    const isC = options.isCustom || false;
 
     setCart(prev => {
       const existing = prev.find(item =>
@@ -144,7 +167,10 @@ export default function App() {
         (item.lamp || '') === trimmedLamp &&
         (item.customDescription || '') === trimmedDesc &&
         (item.extraNote || '') === trimmedNote &&
-        (item.discount || 0) === discountVal
+        (item.discount || 0) === discountVal &&
+        (item.customPrice) === cPrice &&
+        (item.customName || '') === cName &&
+        (item.customModelNumber || '') === cModel
       );
       if (existing) {
         return prev.map(item =>
@@ -155,12 +181,29 @@ export default function App() {
             (item.lamp || '') === trimmedLamp &&
             (item.customDescription || '') === trimmedDesc &&
             (item.extraNote || '') === trimmedNote &&
-            (item.discount || 0) === discountVal)
-            ? { ...item, quantity: item.quantity + 1 }
+            (item.discount || 0) === discountVal &&
+            (item.customPrice) === cPrice &&
+            (item.customName || '') === cName &&
+            (item.customModelNumber || '') === cModel)
+            ? { ...item, quantity: item.quantity + (options.quantity || 1) }
             : item
         );
       }
-      return [...prev, { product, quantity: 1, placeName: trimmedPlace, size: trimmedSize, color: trimmedColor, lamp: trimmedLamp, customDescription: trimmedDesc, extraNote: trimmedNote, discount: discountVal }];
+      return [...prev, { 
+        product, 
+        quantity: options.quantity || 1, 
+        placeName: trimmedPlace, 
+        size: trimmedSize, 
+        color: trimmedColor, 
+        lamp: trimmedLamp, 
+        customDescription: trimmedDesc, 
+        extraNote: trimmedNote, 
+        discount: discountVal,
+        customPrice: cPrice,
+        customName: cName,
+        customModelNumber: cModel,
+        isCustom: isC
+      }];
     });
   };
 
@@ -358,8 +401,9 @@ export default function App() {
 
     finalQuote.items.forEach((item, idx) => {
       // Calculate item-specific discount if any
-      const itemDiscountAmount = item.discount ? (item.product.price * item.discount / 100) : 0;
-      const itemPriceAfterDiscount = item.product.price - itemDiscountAmount;
+      const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
+      const itemDiscountAmount = item.discount ? (basePrice * item.discount / 100) : 0;
+      const itemPriceAfterDiscount = basePrice - itemDiscountAmount;
 
       worksheetData.push([
         (idx + 1).toString(),
@@ -373,8 +417,11 @@ export default function App() {
       ]);
     });
 
-    const grossTotal = totalPrice(finalQuote.items); // This is the sum of (item.product.price * item.quantity)
-    const totalItemDiscount = finalQuote.items.reduce((sum, item) => sum + (item.product.price * (item.discount || 0) / 100 * item.quantity), 0);
+    const grossTotal = totalPrice(finalQuote.items); // This is the sum of (basePrice * item.quantity)
+    const totalItemDiscount = finalQuote.items.reduce((sum, item) => {
+        const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
+        return sum + (basePrice * (item.discount || 0) / 100 * item.quantity);
+    }, 0);
     const subtotalAfterItemDiscounts = grossTotal - totalItemDiscount;
 
     const globalDiscountAmount = finalQuote.globalDiscountType === 'percentage'

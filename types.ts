@@ -11,7 +11,7 @@ export interface Product {
   id: string;
   name: string;
   modelNumber: string;
-  description: string;
+  description?: string;
   price: number;
   category: string;
   image: string;
@@ -49,6 +49,10 @@ export interface QuoteItem {
   discount?: number;
   customDescription?: string;
   extraNote?: string;
+  customPrice?: number;
+  customName?: string;
+  customModelNumber?: string;
+  isCustom?: boolean;
 }
 
 export interface Quotation {

@@ -22,7 +22,7 @@ export default function CartItem({ item, onRemove, onQtyChange, onEdit }: CartIt
                         {item.size && <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold">{item.size}</span>}
                         {item.color && <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold">{item.color}</span>}
                     </div>
-                    <p className="text-[10px] text-indigo-600 font-bold mt-1">₹{item.product.price.toLocaleString('en-IN')}</p>
+                    <p className="text-[10px] text-indigo-600 font-bold mt-1">₹{(item.customPrice !== undefined ? item.customPrice : item.product.price).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="flex flex-col space-y-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={onEdit} className="text-slate-300 hover:text-indigo-600 p-1" title="Edit Item">

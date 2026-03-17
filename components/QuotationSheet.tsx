@@ -161,9 +161,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900">{idx + 1}</td>
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center">
                                     <div className="flex flex-col items-center justify-center space-y-2 print:space-y-0.5">
-                                        <img src={i.product.image} className="w-24 h-24 print:w-14 print:h-14 object-contain" alt={i.product.name} />
-                                        <span className="text-[10px] print:text-[8px] font-black text-slate-900 uppercase tracking-tight">{i.product.modelNumber}</span>
-                                        {isCustomerView && <span className="text-[11px] font-bold text-slate-700">{i.product.name}</span>}
+                                        <img src={i.product.image} className="w-24 h-24 print:w-14 print:h-14 object-contain" alt={i.customName || i.product.name} />
+                                        <span className="text-[10px] print:text-[8px] font-black text-slate-900 uppercase tracking-tight">{i.customModelNumber || i.product.modelNumber}</span>
+                                        {(isCustomerView || i.isCustom) && <span className="text-[11px] font-bold text-slate-700">{i.customName || i.product.name}</span>}
                                     </div>
                                 </td>
 
@@ -171,7 +171,13 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center align-middle">
                                         <div className="flex flex-col items-center justify-center space-y-1 w-full">
                                             <span className="text-[11px] text-slate-600 font-medium leading-relaxed italic block underline decoration-indigo-200/50 underline-offset-4 whitespace-pre-line">
-                                                {i.customDescription || i.product.description}
+                                                {i.customDescription || i.product.description || [
+                                                    i.product.size && `Size: ${i.product.size}`,
+                                                    i.product.lamp && `Lamp: ${i.product.lamp}`,
+                                                    i.product.finishing && `Finish: ${i.product.finishing}`,
+                                                    i.product.sweep && `Sweep: ${i.product.sweep}`,
+                                                    i.product.motorSpec && `Motor: ${i.product.motorSpec}`
+                                                ].filter(Boolean).join('\n')}
                                             </span>
                                             {i.extraNote && (
                                                 <span className="text-[10px] text-blue-600 font-bold whitespace-pre-line border-t border-blue-100 mt-1 pt-1 w-full text-center">
@@ -237,7 +243,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 )}
 
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900">
-                                    {Math.round(i.product.price).toLocaleString('en-IN')}
+                                    {(i.customPrice !== undefined ? i.customPrice : i.product.price).toLocaleString('en-IN')}
                                 </td>
 
                                 {!isCustomerView && (
@@ -245,13 +251,15 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         {(() => {
                                             if (!quote.globalDiscountValue) return '-';
                                             if (quote.globalDiscountType === 'percentage') {
-                                                const discountAmount = i.product.price * quote.globalDiscountValue / 100;
-                                                return Math.round(i.product.price - discountAmount).toLocaleString('en-IN');
+                                                const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
+                                                const discountAmount = basePrice * quote.globalDiscountValue / 100;
+                                                return Math.round(basePrice - discountAmount).toLocaleString('en-IN');
                                             }
                                             // For Flat, we don't usually show 'after discount' per item in this specific table layout 
                                             // as it's a global absolute value, but we can return price if it's confusing.
                                             // The user i-8 i-9 might want it to remain as original price if it's a lump sum.
-                                            return Math.round(i.product.price).toLocaleString('en-IN');
+                                            const originalPrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
+                                            return Math.round(originalPrice).toLocaleString('en-IN');
                                         })()}
                                     </td>
                                 )}
@@ -261,16 +269,17 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         {(() => {
                                             const isPercentage = quote.globalDiscountType === 'percentage';
                                             const gDiscount = quote.globalDiscountValue || 0;
+                                            const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
 
-                                            if (gDiscount <= 0) return Math.round(i.product.price * i.quantity).toLocaleString('en-IN');
+                                            if (gDiscount <= 0) return Math.round(basePrice * i.quantity).toLocaleString('en-IN');
 
                                             if (isPercentage) {
-                                                const discountAmount = i.product.price * gDiscount / 100;
-                                                const discountedPrice = i.product.price - discountAmount;
+                                                const discountAmount = basePrice * gDiscount / 100;
+                                                const discountedPrice = basePrice - discountAmount;
                                                 return Math.round(discountedPrice * i.quantity).toLocaleString('en-IN');
                                             }
                                             // For Flat, we show original total for the item, as the discount is a lump sum at the bottom.
-                                            return Math.round(i.product.price * i.quantity).toLocaleString('en-IN');
+                                            return Math.round(basePrice * i.quantity).toLocaleString('en-IN');
                                         })()}
                                     </td>
                                 )}
@@ -390,10 +399,10 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 {/* Header Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-start p-4">
-                                        <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded uppercase tracking-wider">{i.product.modelNumber}</span>
+                                        <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded uppercase tracking-wider">{i.customModelNumber || i.product.modelNumber}</span>
                                         <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
                                     </div>
-                                    <h4 className="font-bold text-slate-900 text-sm mt-1 leading-tight">{i.product.name}</h4>
+                                    <h4 className="font-bold text-slate-900 text-sm mt-1 leading-tight">{i.customName || i.product.name}</h4>
 
                                     {!isCustomerView && (
                                         <div className="mt-3 flex flex-col space-y-2">
@@ -417,21 +426,23 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             <div className="bg-slate-50 px-4 py-3 border-t flex justify-between items-center text-xs">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] text-slate-400 font-bold uppercase">Qty: {i.quantity}</span>
-                                    {!isCustomerView && <span className="font-medium text-slate-500 line-through text-[10px]">₹{i.product.price.toLocaleString('en-IN')}</span>}
+                                    {!isCustomerView && <span className="font-medium text-slate-500 line-through text-[10px]">₹{(i.customPrice !== undefined ? i.customPrice : i.product.price).toLocaleString('en-IN')}</span>}
                                 </div>
                                 <div className="flex flex-col items-end">
                                     {(() => {
                                         const isPercentage = quote.globalDiscountType === 'percentage';
                                         const gDiscount = quote.globalDiscountValue || 0;
+                                        const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
+                                        
                                         if (isPercentage && gDiscount > 0) {
-                                            const discountAmount = i.product.price * gDiscount / 100;
-                                            const discountedPrice = i.product.price - discountAmount;
+                                            const discountAmount = basePrice * gDiscount / 100;
+                                            const discountedPrice = basePrice - discountAmount;
                                             return (
                                                 <span className="font-black text-indigo-700 text-base">₹{Math.round(discountedPrice * i.quantity).toLocaleString('en-IN')}</span>
                                             );
                                         }
                                         return (
-                                            <span className="font-black text-indigo-700 text-base">₹{Math.round(i.product.price * i.quantity).toLocaleString('en-IN')}</span>
+                                            <span className="font-black text-indigo-700 text-base">₹{Math.round(basePrice * i.quantity).toLocaleString('en-IN')}</span>
                                         );
                                     })()}
                                 </div>
@@ -541,43 +552,32 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-slate-200 print-compact print:mt-1 print:pt-1">
-                    <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6 print:gap-3">
+                    <div className="flex flex-col gap-6 print:gap-3">
                         {/* Banking Details */}
-                        <div className="space-y-3 no-print-break">
+                        <div className="space-y-3 no-print-break w-full">
                             <h4 className="text-sm font-bold text-slate-900 border-b pb-1.5 uppercase tracking-tight">Banking Details (RTGS / NEFT)</h4>
-                            <div className="space-y-1.5 text-xs text-slate-600">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1.5 text-xs text-slate-600">
                                 <div className="flex">
                                     <span className="w-28 font-bold text-slate-400">Company Name</span>
                                     <span className="font-bold text-slate-800">Magnific Home Appliances</span>
-                                </div>
-                                <div className="flex">
-                                    <span className="w-28 font-bold text-slate-400">Bank Name</span>
-                                    <span className="font-bold text-slate-800">Axis Bank</span>
-                                </div>
-                                <div className="flex">
-                                    <span className="w-28 font-bold text-slate-400">Account No</span>
-                                    <span className="font-bold text-indigo-700 tracking-wider">924030028295392</span>
                                 </div>
                                 <div className="flex">
                                     <span className="w-28 font-bold text-slate-400">Branch</span>
                                     <span className="font-bold text-slate-800">Koramangala</span>
                                 </div>
                                 <div className="flex">
+                                    <span className="w-28 font-bold text-slate-400">Bank Name</span>
+                                    <span className="font-bold text-slate-800">Axis Bank</span>
+                                </div>
+                                <div className="flex">
                                     <span className="w-28 font-bold text-slate-400">IFSC Code</span>
                                     <span className="font-bold text-indigo-700 tracking-wider">UTIB0000194</span>
                                 </div>
+                                <div className="flex">
+                                    <span className="w-28 font-bold text-slate-400">Account No</span>
+                                    <span className="font-bold text-indigo-700 tracking-wider">924030028295392</span>
+                                </div>
                             </div>
-                        </div>
-
-                        {/* Payment QR Code Scanner */}
-                        <div className="flex flex-col items-center no-print-break">
-                            <h4 className="text-sm font-bold text-slate-900 border-b pb-1.5 mb-3 uppercase tracking-tight w-full text-center">UPI Payment</h4>
-                            <img
-                                src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=magnific@axisbank&pn=Magnific%20Home%20Appliances&cu=INR"
-                                alt="Payment QR Code"
-                                className="w-40 h-40 object-contain border-2 border-slate-200 rounded-lg p-2 bg-white"
-                            />
-                            <p className="text-xs font-bold text-indigo-700 mt-2 uppercase tracking-wide">Scan to Pay</p>
                         </div>
                     </div>
 
