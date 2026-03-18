@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Customer, Product, QuoteItem, Quotation } from './types';
-import { STORAGE_KEY } from './constants';
+import { STORAGE_KEY, DRAFT_STORAGE_KEY } from './constants';
 import * as XLSX from 'xlsx';
 import { totalPrice, discountableSubtotal, servicesSubtotal } from './utils';
 import { HistoryIcon } from './components/Icons';
@@ -19,8 +19,14 @@ export default function App() {
   const location = useLocation();
 
   // Global State
-  const [customer, setCustomer] = useState<Customer & { advanceAmount?: number, advanceDate?: string }>({ name: '', email: '', phone: '', address: '', company: '', advanceAmount: 0, advanceDate: '' });
-  const [cart, setCart] = useState<QuoteItem[]>([]);
+  const [customer, setCustomer] = useState<Customer & { advanceAmount?: number, advanceDate?: string }>(() => {
+    const raw = localStorage.getItem(`${DRAFT_STORAGE_KEY}_customer`);
+    return raw ? JSON.parse(raw) : { name: '', email: '', phone: '', address: '', company: '', advanceAmount: 0, advanceDate: '' };
+  });
+  const [cart, setCart] = useState<QuoteItem[]>(() => {
+    const raw = localStorage.getItem(`${DRAFT_STORAGE_KEY}_cart`);
+    return raw ? JSON.parse(raw) : [];
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [finalQuote, setFinalQuote] = useState<Quotation | null>(null);
   const [savedQuotes, setSavedQuotes] = useState<Quotation[]>([]);
@@ -30,8 +36,14 @@ export default function App() {
 
   const [isCustomerView, setIsCustomerView] = useState(false);
   const [isPublicMode, setIsPublicMode] = useState(false);
-  const [discountType, setDiscountType] = useState<'flat' | 'percentage' | null>(null);
-  const [discountValue, setDiscountValue] = useState<number>(0);
+  const [discountType, setDiscountType] = useState<'flat' | 'percentage' | null>(() => {
+    const raw = localStorage.getItem(`${DRAFT_STORAGE_KEY}_discountType`);
+    return (raw === 'flat' || raw === 'percentage') ? raw : null;
+  });
+  const [discountValue, setDiscountValue] = useState<number>(() => {
+    const raw = localStorage.getItem(`${DRAFT_STORAGE_KEY}_discountValue`);
+    return raw ? Number(raw) : 0;
+  });
 
   // Edit Mode State
   const [isEditMode, setIsEditMode] = useState(false);
@@ -42,7 +54,17 @@ export default function App() {
     if (raw) {
       try { setSavedQuotes(JSON.parse(raw)); } catch (e) { console.error(e); }
     }
+  }, []);
 
+  // Save draft to localStorage
+  useEffect(() => {
+    localStorage.setItem(`${DRAFT_STORAGE_KEY}_customer`, JSON.stringify(customer));
+    localStorage.setItem(`${DRAFT_STORAGE_KEY}_cart`, JSON.stringify(cart));
+    localStorage.setItem(`${DRAFT_STORAGE_KEY}_discountType`, discountType || '');
+    localStorage.setItem(`${DRAFT_STORAGE_KEY}_discountValue`, String(discountValue));
+  }, [customer, cart, discountType, discountValue]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const dataParam = params.get('data');
     const viewMode = params.get('view');
@@ -131,6 +153,17 @@ export default function App() {
 
     fetchProducts();
   }, [navigate]);
+
+  const resetDraft = () => {
+    setCustomer({ name: '', email: '', phone: '', address: '', company: '', advanceAmount: 0, advanceDate: '' });
+    setCart([]);
+    setDiscountType(null);
+    setDiscountValue(0);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_customer`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_cart`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountType`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountValue`);
+  };
 
   const addToCart = (product: Product, options: { 
     placeName?: string, 
@@ -381,9 +414,10 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
     setIsSaved(true);
 
-    // Reset edit mode
+    // Reset edit mode and clear draft
     setIsEditMode(false);
     setEditingQuoteId(null);
+    resetDraft();
   };
 
   const deleteSaved = (e: React.MouseEvent, id: string) => {
