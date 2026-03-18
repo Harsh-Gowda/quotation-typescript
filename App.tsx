@@ -433,8 +433,8 @@ export default function App() {
 
     const grossTotal = totalPrice(finalQuote.items);
     
-    // Calculate GST Base respecting per-item includeGst
-    const gstBase = finalQuote.items.reduce((sum, item) => {
+    // Calculate GST Base
+    let gstBase = finalQuote.items.reduce((sum, item) => {
       const isService = item.product.category === 'Services';
       const gstApplies = isService || item.includeGst !== false;
       if (!gstApplies) return sum;
@@ -442,36 +442,36 @@ export default function App() {
       const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
       if (isService) return sum + basePrice * item.quantity;
       
-      // For non-services: calculate discounted price first (if applicable)
       const isPercentage = finalQuote.globalDiscountType === 'percentage';
       const val = finalQuote.globalDiscountValue || 0;
       const discounted = (isPercentage && item.includeDiscount !== false) ? basePrice * (1 - val / 100) : basePrice;
       return sum + discounted * item.quantity;
     }, 0);
 
-    const discSub = discountableSubtotal(finalQuote.items);
-    const srvSub = servicesSubtotal(finalQuote.items);
-    
-    // Total discount amount calculation
-    const totalDiscountAmount = finalQuote.items.reduce((sum, item) => {
-      if (item.product.category === 'Services' || item.includeDiscount === false) return sum;
-      const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
-      const isPercentage = finalQuote.globalDiscountType === 'percentage';
+    // If adjustment (flat) applies, reduce GST base proportionally
+    if (finalQuote.globalDiscountType === 'flat') {
       const val = finalQuote.globalDiscountValue || 0;
-      
-      const itemDiscount = isPercentage ? Math.round(basePrice * val / 100) : 0;
-      return sum + itemDiscount * item.quantity;
-    }, finalQuote.globalDiscountType === 'flat' ? (finalQuote.globalDiscountValue || 0) : 0);
+      gstBase = gstBase * (1 - val / 100);
+    }
 
-    const flatDiscountForGst = finalQuote.globalDiscountType === 'flat' ? (finalQuote.globalDiscountValue || 0) : 0;
-    const netGstBase = Math.max(0, gstBase - flatDiscountForGst);
+    const val = finalQuote.globalDiscountValue || 0;
+    const totalDiscountAmount = finalQuote.globalDiscountType === 'flat' 
+      ? Math.round(grossTotal * val / 100)
+      : finalQuote.items.reduce((sum, item) => {
+          if (item.product.category === 'Services' || item.includeDiscount === false) return sum;
+          const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
+          const itemDiscount = Math.round(basePrice * val / 100);
+          return sum + itemDiscount * item.quantity;
+        }, 0);
+
+    const netGstBase = Math.max(0, gstBase);
     const gstAmount = Math.round(netGstBase * 0.18);
     const grandTotal = (grossTotal - totalDiscountAmount) + gstAmount;
 
     worksheetData.push(['']);
     worksheetData.push(['', '', '', '', '', '', 'Gross Total', grossTotal.toLocaleString('en-IN')]);
     if (totalDiscountAmount > 0) {
-      const label = finalQuote.globalDiscountType === 'percentage' ? 'Discount (Percentage)' : 'Discount (Flat)';
+      const label = finalQuote.globalDiscountType === 'flat' ? `Adjustment (${val}%)` : `Discount (${val}%)`;
       worksheetData.push(['', '', '', '', '', '', label, `-${totalDiscountAmount.toLocaleString('en-IN')}`]);
     }
     worksheetData.push(['', '', '', '', '', '', 'Net Total', (grossTotal - totalDiscountAmount).toLocaleString('en-IN')]);

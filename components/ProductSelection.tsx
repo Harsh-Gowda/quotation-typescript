@@ -645,24 +645,24 @@ export default function ProductSelection({
                                         onClick={() => setDiscountType(discountType === 'flat' ? null : 'flat')}
                                         className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'flat' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
                                     >
-                                        Flat (₹)
+                                        Adjustment (%)
                                     </button>
                                     <button
                                         onClick={() => setDiscountType(discountType === 'percentage' ? null : 'percentage')}
                                         className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'percentage' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
                                     >
-                                        Percentage (%)
+                                        Discount (%)
                                     </button>
                                 </div>
 
                                 {/* Input */}
                                 {discountType && (
                                     <div className="flex items-center space-x-2 bg-white px-3 py-2 border rounded-md focus-within:ring-2 ring-indigo-500/20 ring-offset-1">
-                                        <span className="text-slate-400 font-bold">{discountType === 'flat' ? '₹' : '%'}</span>
+                                        <span className="text-slate-400 font-bold">%</span>
                                         <input
                                             type="number"
                                             className="w-full bg-transparent outline-none font-bold text-slate-900 placeholder-slate-300"
-                                            placeholder={discountType === 'flat' ? "Enter amount" : "Enter percentage"}
+                                            placeholder={discountType === 'flat' ? "Enter adjustment %" : "Enter discount %"}
                                             value={discountValue || ''}
                                             onChange={(e) => setDiscountValue(Number(e.target.value))}
                                         />
@@ -677,10 +677,10 @@ export default function ProductSelection({
                                             <span>₹{subtotal.toLocaleString('en-IN')}</span>
                                         </div>
                                         <div className="flex justify-between text-red-500 font-medium">
-                                            <span>Discount {discountType === 'percentage' ? `(${discountValue}%)` : ''} (excl. services):</span>
+                                            <span>{discountType === 'flat' ? 'Adjustment' : 'Discount'} ({discountValue}%):</span>
                                             <span>
                                                 -₹{(discountType === 'flat'
-                                                    ? discountValue
+                                                    ? Math.round(subtotal * discountValue / 100)
                                                     : Math.round(discountableSubtotal(cart) * discountValue / 100)
                                                 ).toLocaleString('en-IN')}
                                             </span>
@@ -691,8 +691,8 @@ export default function ProductSelection({
                                                 ₹{(() => {
                                                     const discSub = discountableSubtotal(cart);
                                                     const srvSub = servicesSubtotal(cart);
-                                                    const discAmt = discountType === 'flat' ? discountValue : Math.round(discSub * discountValue / 100);
-                                                    return (discSub - discAmt + srvSub).toLocaleString('en-IN');
+                                                    const discAmt = discountType === 'flat' ? Math.round(subtotal * discountValue / 100) : Math.round(discSub * discountValue / 100);
+                                                    return (discSub - (discountType === 'percentage' ? discAmt : 0) + srvSub - (discountType === 'flat' ? discAmt : 0)).toLocaleString('en-IN');
                                                 })()}
                                             </span>
                                         </div>
@@ -701,8 +701,9 @@ export default function ProductSelection({
                                             <span>₹{(() => {
                                                 const discSub = discountableSubtotal(cart);
                                                 const srvSub = servicesSubtotal(cart);
-                                                const discAmt = discountType === 'flat' ? discountValue : Math.round(discSub * discountValue / 100);
-                                                return Math.round((discSub - discAmt + srvSub) * 0.18).toLocaleString('en-IN');
+                                                const discAmt = discountType === 'flat' ? Math.round(subtotal * discountValue / 100) : Math.round(discSub * discountValue / 100);
+                                                const netTotal = (discSub - (discountType === 'percentage' ? discAmt : 0) + srvSub - (discountType === 'flat' ? discAmt : 0));
+                                                return Math.round(netTotal * 0.18).toLocaleString('en-IN');
                                             })()}</span>
                                         </div>
                                         <div className="flex justify-between font-black text-indigo-700 pt-1 border-t border-dashed">
@@ -711,8 +712,9 @@ export default function ProductSelection({
                                                 ₹{(() => {
                                                     const discSub = discountableSubtotal(cart);
                                                     const srvSub = servicesSubtotal(cart);
-                                                    const discAmt = discountType === 'flat' ? discountValue : Math.round(discSub * discountValue / 100);
-                                                    return Math.round((discSub - discAmt + srvSub) * 1.18).toLocaleString('en-IN');
+                                                    const discAmt = discountType === 'flat' ? Math.round(subtotal * discountValue / 100) : Math.round(discSub * discountValue / 100);
+                                                    const netTotal = (discSub - (discountType === 'percentage' ? discAmt : 0) + srvSub - (discountType === 'flat' ? discAmt : 0));
+                                                    return Math.round(netTotal * 1.18).toLocaleString('en-IN');
                                                 })()}
                                             </span>
                                         </div>
