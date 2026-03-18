@@ -53,6 +53,9 @@ export interface QuoteItem {
   customName?: string;
   customModelNumber?: string;
   isCustom?: boolean;
+  showLineart?: boolean;
+  includeGst?: boolean;
+  includeDiscount?: boolean;
 }
 
 export interface Quotation {

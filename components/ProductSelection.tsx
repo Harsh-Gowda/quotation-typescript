@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Product, QuoteItem } from '../types';
+import { discountableSubtotal, servicesSubtotal } from '../utils';
 import { BackIcon, SearchIcon, CartIcon } from './Icons';
 import ProductCard from './ProductCard';
 import ProductModal from './ProductModal';
@@ -102,12 +103,12 @@ export default function ProductSelection({
         const specialProducts: Product[] = [
             {
                 id: 'customization-charge',
-                name: 'Customization Product Charge',
+                name: 'Service Card',
                 modelNumber: 'SRV-CUST',
                 description: 'Charges for customizing the product to specific requirements.',
-                price: 0, // Open price, editable likely through discount or manual edit, or a fixed 0 base
+                price: 0,
                 category: 'Services',
-                image: 'https://cdn-icons-png.flaticon.com/512/3588/3588647.png', // Generic tool/service icon
+                image: 'https://cdn-icons-png.flaticon.com/512/3588/3588647.png',
             },
             {
                 id: 'fan-installation',
@@ -676,36 +677,43 @@ export default function ProductSelection({
                                             <span>₹{subtotal.toLocaleString('en-IN')}</span>
                                         </div>
                                         <div className="flex justify-between text-red-500 font-medium">
-                                            <span>Discount {discountType === 'percentage' ? `(${discountValue}%)` : ''}:</span>
+                                            <span>Discount {discountType === 'percentage' ? `(${discountValue}%)` : ''} (excl. services):</span>
                                             <span>
                                                 -₹{(discountType === 'flat'
                                                     ? discountValue
-                                                    : Math.round(subtotal * discountValue / 100)
+                                                    : Math.round(discountableSubtotal(cart) * discountValue / 100)
                                                 ).toLocaleString('en-IN')}
                                             </span>
                                         </div>
                                         <div className="flex justify-between font-bold text-slate-900 pt-1">
                                             <span>Net Total:</span>
                                             <span>
-                                                ₹{(discountType === 'flat'
-                                                    ? (subtotal - discountValue)
-                                                    : Math.round(subtotal * (1 - discountValue / 100))
-                                                ).toLocaleString('en-IN')}
+                                                ₹{(() => {
+                                                    const discSub = discountableSubtotal(cart);
+                                                    const srvSub = servicesSubtotal(cart);
+                                                    const discAmt = discountType === 'flat' ? discountValue : Math.round(discSub * discountValue / 100);
+                                                    return (discSub - discAmt + srvSub).toLocaleString('en-IN');
+                                                })()}
                                             </span>
                                         </div>
-                                        {discountType === 'percentage' && (
-                                            <div className="flex justify-between text-slate-500 italic">
-                                                <span>+ GST @18%:</span>
-                                                <span>₹{Math.round(subtotal * (1 - discountValue / 100) * 0.18).toLocaleString('en-IN')}</span>
-                                            </div>
-                                        )}
+                                        <div className="flex justify-between text-slate-500 italic">
+                                            <span>+ GST @18%:</span>
+                                            <span>₹{(() => {
+                                                const discSub = discountableSubtotal(cart);
+                                                const srvSub = servicesSubtotal(cart);
+                                                const discAmt = discountType === 'flat' ? discountValue : Math.round(discSub * discountValue / 100);
+                                                return Math.round((discSub - discAmt + srvSub) * 0.18).toLocaleString('en-IN');
+                                            })()}</span>
+                                        </div>
                                         <div className="flex justify-between font-black text-indigo-700 pt-1 border-t border-dashed">
                                             <span>Final Amount:</span>
                                             <span>
-                                                ₹{(discountType === 'flat'
-                                                    ? (subtotal - discountValue)
-                                                    : Math.round(subtotal * (1 - discountValue / 100) * 1.18)
-                                                ).toLocaleString('en-IN')}
+                                                ₹{(() => {
+                                                    const discSub = discountableSubtotal(cart);
+                                                    const srvSub = servicesSubtotal(cart);
+                                                    const discAmt = discountType === 'flat' ? discountValue : Math.round(discSub * discountValue / 100);
+                                                    return Math.round((discSub - discAmt + srvSub) * 1.18).toLocaleString('en-IN');
+                                                })()}
                                             </span>
                                         </div>
                                     </div>

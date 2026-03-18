@@ -4,7 +4,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Customer, Product, QuoteItem, Quotation } from './types';
 import { STORAGE_KEY } from './constants';
 import * as XLSX from 'xlsx';
-import { totalPrice } from './utils';
+import { totalPrice, discountableSubtotal, servicesSubtotal } from './utils';
 import { HistoryIcon } from './components/Icons';
 import { supabase } from './services/supabase';
 
@@ -202,9 +202,23 @@ export default function App() {
         customPrice: cPrice,
         customName: cName,
         customModelNumber: cModel,
-        isCustom: isC
+        isCustom: isC,
+        showLineart: false,
+        includeGst: true,
+        includeDiscount: true
       }];
     });
+  };
+
+  const handleUpdateItemSetting = (index: number, key: 'showLineart' | 'includeGst' | 'includeDiscount', value: boolean) => {
+    if (!finalQuote) return;
+    const updatedItems = [...finalQuote.items];
+    updatedItems[index] = { ...updatedItems[index], [key]: value };
+    setFinalQuote({
+      ...finalQuote,
+      items: updatedItems
+    });
+    setIsSaved(false);
   };
 
   const removeFromCart = (productId: string, options: { placeName?: string, size?: string, color?: string, lamp?: string, discount?: number, customDescription?: string, extraNote?: string }) => {
@@ -417,31 +431,51 @@ export default function App() {
       ]);
     });
 
-    const grossTotal = totalPrice(finalQuote.items); // This is the sum of (basePrice * item.quantity)
-    const totalItemDiscount = finalQuote.items.reduce((sum, item) => {
-        const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
-        return sum + (basePrice * (item.discount || 0) / 100 * item.quantity);
+    const grossTotal = totalPrice(finalQuote.items);
+    
+    // Calculate GST Base respecting per-item includeGst
+    const gstBase = finalQuote.items.reduce((sum, item) => {
+      const isService = item.product.category === 'Services';
+      const gstApplies = isService || item.includeGst !== false;
+      if (!gstApplies) return sum;
+
+      const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
+      if (isService) return sum + basePrice * item.quantity;
+      
+      // For non-services: calculate discounted price first (if applicable)
+      const isPercentage = finalQuote.globalDiscountType === 'percentage';
+      const val = finalQuote.globalDiscountValue || 0;
+      const discounted = (isPercentage && item.includeDiscount !== false) ? basePrice * (1 - val / 100) : basePrice;
+      return sum + discounted * item.quantity;
     }, 0);
-    const subtotalAfterItemDiscounts = grossTotal - totalItemDiscount;
 
-    const globalDiscountAmount = finalQuote.globalDiscountType === 'percentage'
-      ? (subtotalAfterItemDiscounts * (finalQuote.globalDiscountValue || 0) / 100)
-      : (finalQuote.globalDiscountValue || 0);
+    const discSub = discountableSubtotal(finalQuote.items);
+    const srvSub = servicesSubtotal(finalQuote.items);
+    
+    // Total discount amount calculation
+    const totalDiscountAmount = finalQuote.items.reduce((sum, item) => {
+      if (item.product.category === 'Services' || item.includeDiscount === false) return sum;
+      const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
+      const isPercentage = finalQuote.globalDiscountType === 'percentage';
+      const val = finalQuote.globalDiscountValue || 0;
+      
+      const itemDiscount = isPercentage ? Math.round(basePrice * val / 100) : 0;
+      return sum + itemDiscount * item.quantity;
+    }, finalQuote.globalDiscountType === 'flat' ? (finalQuote.globalDiscountValue || 0) : 0);
 
-    const netAmountBeforeTax = subtotalAfterItemDiscounts - globalDiscountAmount;
-    const gstAmount = netAmountBeforeTax * finalQuote.taxRate;
-    const grandTotal = netAmountBeforeTax + gstAmount;
+    const flatDiscountForGst = finalQuote.globalDiscountType === 'flat' ? (finalQuote.globalDiscountValue || 0) : 0;
+    const netGstBase = Math.max(0, gstBase - flatDiscountForGst);
+    const gstAmount = Math.round(netGstBase * 0.18);
+    const grandTotal = (grossTotal - totalDiscountAmount) + gstAmount;
 
     worksheetData.push(['']);
     worksheetData.push(['', '', '', '', '', '', 'Gross Total', grossTotal.toLocaleString('en-IN')]);
-    if (finalQuote.globalDiscountValue) {
-      const label = finalQuote.globalDiscountType === 'percentage' ? `Discount (${finalQuote.globalDiscountValue}%)` : 'Discount (Flat)';
-      worksheetData.push(['', '', '', '', '', '', label, `-${globalDiscountAmount.toLocaleString('en-IN')}`]);
+    if (totalDiscountAmount > 0) {
+      const label = finalQuote.globalDiscountType === 'percentage' ? 'Discount (Percentage)' : 'Discount (Flat)';
+      worksheetData.push(['', '', '', '', '', '', label, `-${totalDiscountAmount.toLocaleString('en-IN')}`]);
     }
-    worksheetData.push(['', '', '', '', '', '', 'Net Total', netAmountBeforeTax.toLocaleString('en-IN')]);
-    if (finalQuote.globalDiscountType === 'percentage' || !finalQuote.globalDiscountValue) {
-      worksheetData.push(['', '', '', '', '', '', 'GST (18%)', gstAmount.toLocaleString('en-IN')]);
-    }
+    worksheetData.push(['', '', '', '', '', '', 'Net Total', (grossTotal - totalDiscountAmount).toLocaleString('en-IN')]);
+    worksheetData.push(['', '', '', '', '', '', 'GST (18%)', gstAmount.toLocaleString('en-IN')]);
     if (finalQuote.advanceAmount) {
       worksheetData.push(['', '', '', '', '', '', 'Advance Paid', finalQuote.advanceAmount.toLocaleString('en-IN')]);
       worksheetData.push(['', '', '', '', '', '', 'Balance Due', (grandTotal - finalQuote.advanceAmount).toLocaleString('en-IN')]);
@@ -554,6 +588,7 @@ export default function App() {
                 onUpdateCustomer={handleUpdateCustomer}
                 onUpdateItemQuantity={handleUpdateItemQuantity}
                 onUpdateItemPlace={handleUpdateItemPlace}
+                onUpdateItemSetting={handleUpdateItemSetting}
                 onNewQuote={() => {
                   setCart([]);
                   setCustomer({ name: '', email: '', phone: '', address: '', company: '' });

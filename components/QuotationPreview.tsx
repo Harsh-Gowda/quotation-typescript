@@ -14,13 +14,14 @@ interface QuotationPreviewProps {
     onUpdateCustomer?: (updates: Partial<Customer>) => void;
     onUpdateItemQuantity?: (index: number, quantity: number) => void;
     onUpdateItemPlace?: (index: number, placeName: string) => void;
+    onUpdateItemSetting?: (index: number, key: 'showLineart' | 'includeGst' | 'includeDiscount', value: boolean) => void;
     onNewQuote: () => void;
     isPublicMode: boolean;
     isCustomerView: boolean;
 }
 
 export default function QuotationPreview({
-    finalQuote, subtotal, isSaved, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onNewQuote,
+    finalQuote, subtotal, isSaved, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onNewQuote,
     isPublicMode, isCustomerView
 }: QuotationPreviewProps) {
     const navigate = useNavigate();
@@ -51,7 +52,7 @@ export default function QuotationPreview({
             )}
 
             {/* Printable Sheet */}
-            <div className="bg-white shadow-xl print:shadow-none print:m-0 overflow-hidden print:overflow-visible w-full">
+            <div className="bg-white shadow-xl print:shadow-none print:m-0 overflow-visible print:overflow-visible w-full">
                 <QuotationSheet
                     quote={finalQuote}
                     subtotal={subtotal}
@@ -60,6 +61,7 @@ export default function QuotationPreview({
                     onUpdateCustomer={onUpdateCustomer}
                     onUpdateItemQuantity={onUpdateItemQuantity}
                     onUpdateItemPlace={onUpdateItemPlace}
+                    onUpdateItemSetting={onUpdateItemSetting}
                 />
             </div>
         </div>
