@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Product, QuoteItem } from '../types';
-import { discountableSubtotal, servicesSubtotal } from '../utils';
+import { totalPrice, discountableSubtotal, servicesSubtotal, computeGstBase, calculateTotalDiscount } from '../utils';
 import { BackIcon, SearchIcon, CartIcon } from './Icons';
 import ProductCard from './ProductCard';
 import ProductModal from './ProductModal';
@@ -15,8 +15,8 @@ interface ProductSelectionProps {
     updateQuantity: (productId: string, options: any, qty: number) => void;
     updateCartItem: (index: number, options: any) => void;
     subtotal: number;
-    discountType: 'flat' | 'percentage' | null;
-    setDiscountType: (type: 'flat' | 'percentage' | null) => void;
+    discountType: 'include' | 'exclude' | null;
+    setDiscountType: (type: 'include' | 'exclude' | null) => void;
     discountValue: number;
     setDiscountValue: (val: number) => void;
     onGenerateQuote: () => void;
@@ -642,16 +642,16 @@ export default function ProductSelection({
                                 {/* Toggles */}
                                 <div className="flex space-x-2">
                                     <button
-                                        onClick={() => setDiscountType(discountType === 'flat' ? null : 'flat')}
-                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'flat' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
+                                        onClick={() => setDiscountType(discountType === 'include' ? null : 'include')}
+                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'include' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
                                     >
-                                        Adjustment (%)
+                                        Discount Include
                                     </button>
                                     <button
-                                        onClick={() => setDiscountType(discountType === 'percentage' ? null : 'percentage')}
-                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'percentage' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
+                                        onClick={() => setDiscountType(discountType === 'exclude' ? null : 'exclude')}
+                                        className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'exclude' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
                                     >
-                                        Discount (%)
+                                        Discount Exclude
                                     </button>
                                 </div>
 
@@ -662,7 +662,7 @@ export default function ProductSelection({
                                         <input
                                             type="number"
                                             className="w-full bg-transparent outline-none font-bold text-slate-900 placeholder-slate-300"
-                                            placeholder={discountType === 'flat' ? "Enter adjustment %" : "Enter discount %"}
+                                            placeholder={discountType === 'include' ? "Enter include %" : "Enter exclude %"}
                                             value={discountValue || ''}
                                             onChange={(e) => setDiscountValue(Number(e.target.value))}
                                         />
@@ -676,48 +676,49 @@ export default function ProductSelection({
                                             <span>Subtotal:</span>
                                             <span>₹{subtotal.toLocaleString('en-IN')}</span>
                                         </div>
-                                        <div className="flex justify-between text-red-500 font-medium">
-                                            <span>{discountType === 'flat' ? 'Adjustment' : 'Discount'} ({discountValue}%):</span>
-                                            <span>
-                                                -₹{(discountType === 'flat'
-                                                    ? Math.round(subtotal * discountValue / 100)
-                                                    : Math.round(discountableSubtotal(cart) * discountValue / 100)
-                                                ).toLocaleString('en-IN')}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between font-bold text-slate-900 pt-1">
-                                            <span>Net Total:</span>
-                                            <span>
-                                                ₹{(() => {
-                                                    const discSub = discountableSubtotal(cart);
-                                                    const srvSub = servicesSubtotal(cart);
-                                                    const discAmt = discountType === 'flat' ? Math.round(subtotal * discountValue / 100) : Math.round(discSub * discountValue / 100);
-                                                    return (discSub - (discountType === 'percentage' ? discAmt : 0) + srvSub - (discountType === 'flat' ? discAmt : 0)).toLocaleString('en-IN');
-                                                })()}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between text-slate-500 italic">
-                                            <span>+ GST @18%:</span>
-                                            <span>₹{(() => {
-                                                const discSub = discountableSubtotal(cart);
-                                                const srvSub = servicesSubtotal(cart);
-                                                const discAmt = discountType === 'flat' ? Math.round(subtotal * discountValue / 100) : Math.round(discSub * discountValue / 100);
-                                                const netTotal = (discSub - (discountType === 'percentage' ? discAmt : 0) + srvSub - (discountType === 'flat' ? discAmt : 0));
-                                                return Math.round(netTotal * 0.18).toLocaleString('en-IN');
-                                            })()}</span>
-                                        </div>
-                                        <div className="flex justify-between font-black text-indigo-700 pt-1 border-t border-dashed">
-                                            <span>Final Amount:</span>
-                                            <span>
-                                                ₹{(() => {
-                                                    const discSub = discountableSubtotal(cart);
-                                                    const srvSub = servicesSubtotal(cart);
-                                                    const discAmt = discountType === 'flat' ? Math.round(subtotal * discountValue / 100) : Math.round(discSub * discountValue / 100);
-                                                    const netTotal = (discSub - (discountType === 'percentage' ? discAmt : 0) + srvSub - (discountType === 'flat' ? discAmt : 0));
-                                                    return Math.round(netTotal * 1.18).toLocaleString('en-IN');
-                                                })()}
-                                            </span>
-                                        </div>
+                                        
+                                        {(() => {
+                                            const gstBaseVal = computeGstBase(cart, discountType || undefined, discountValue);
+                                            const gstAmount = Math.round(gstBaseVal * 0.18);
+                                            const discAmount = calculateTotalDiscount(cart, discountType || undefined, discountValue);
+                                            const totalGross = totalPrice(cart);
+
+                                            if (discountType === 'exclude') {
+                                                return (
+                                                    <>
+                                                        <div className="flex justify-between text-red-500 font-medium">
+                                                            <span>Discount Exclude ({discountValue}%):</span>
+                                                            <span>-₹{discAmount.toLocaleString('en-IN')}</span>
+                                                        </div>
+                                                        <div className="flex justify-between font-bold text-slate-900 pt-1">
+                                                            <span>Net Total:</span>
+                                                            <span>₹{(totalGross - discAmount).toLocaleString('en-IN')}</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-slate-500 italic">
+                                                            <span>+ GST @18%:</span>
+                                                            <span>₹{gstAmount.toLocaleString('en-IN')}</span>
+                                                        </div>
+                                                        <div className="flex justify-between font-black text-indigo-700 pt-1 border-t border-dashed">
+                                                            <span>Final Amount:</span>
+                                                            <span>₹{(totalGross - discAmount + gstAmount).toLocaleString('en-IN')}</span>
+                                                        </div>
+                                                    </>
+                                                );
+                                            } else {
+                                                return (
+                                                    <>
+                                                        <div className="flex justify-between text-red-500 font-medium">
+                                                            <span>Discount Include ({discountValue}%):</span>
+                                                            <span>-₹{discAmount.toLocaleString('en-IN')}</span>
+                                                        </div>
+                                                        <div className="flex justify-between font-black text-indigo-700 pt-1 border-t border-dashed">
+                                                            <span>Final Amount:</span>
+                                                            <span>₹{(totalGross - discAmount).toLocaleString('en-IN')}</span>
+                                                        </div>
+                                                    </>
+                                                );
+                                            }
+                                        })()}
                                     </div>
                                 )}
                             </div>

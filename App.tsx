@@ -4,7 +4,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Customer, Product, QuoteItem, Quotation } from './types';
 import { STORAGE_KEY, DRAFT_STORAGE_KEY } from './constants';
 import * as XLSX from 'xlsx';
-import { totalPrice, discountableSubtotal, servicesSubtotal } from './utils';
+import { totalPrice, computeGstBase, calculateTotalDiscount } from './utils';
 import { HistoryIcon } from './components/Icons';
 import { supabase } from './services/supabase';
 
@@ -36,9 +36,9 @@ export default function App() {
 
   const [isCustomerView, setIsCustomerView] = useState(false);
   const [isPublicMode, setIsPublicMode] = useState(false);
-  const [discountType, setDiscountType] = useState<'flat' | 'percentage' | null>(() => {
+  const [discountType, setDiscountType] = useState<'include' | 'exclude' | null>(() => {
     const raw = localStorage.getItem(`${DRAFT_STORAGE_KEY}_discountType`);
-    return (raw === 'flat' || raw === 'percentage') ? raw : null;
+    return (raw === 'include' || raw === 'exclude') ? raw : null;
   });
   const [discountValue, setDiscountValue] = useState<number>(() => {
     const raw = localStorage.getItem(`${DRAFT_STORAGE_KEY}_discountValue`);
@@ -448,10 +448,21 @@ export default function App() {
     ];
 
     finalQuote.items.forEach((item, idx) => {
-      // Calculate item-specific discount if any
       const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
-      const itemDiscountAmount = item.discount ? (basePrice * item.discount / 100) : 0;
-      const itemPriceAfterDiscount = basePrice - itemDiscountAmount;
+      const effectivePrice = item.includeGst !== false ? basePrice : basePrice / 1.18;
+      
+      // Internal Unit Price shows the price with global discount if type is 'exclude'
+      const isExclude = finalQuote.globalDiscountType === 'exclude';
+      const gDiscount = finalQuote.globalDiscountValue || 0;
+      const appliesDisc = item.product.category !== 'Services' && item.includeDiscount !== false;
+      
+      let unitPrice = effectivePrice;
+      if (appliesDisc && isExclude && gDiscount > 0) {
+        unitPrice = effectivePrice * (1 - gDiscount / 100);
+      }
+
+      const displayUnitPrice = Math.round(unitPrice);
+      const displayTotal = Math.round(unitPrice * item.quantity);
 
       worksheetData.push([
         (idx + 1).toString(),
@@ -460,61 +471,47 @@ export default function App() {
         (item.customDescription || item.product.description) + (item.extraNote ? `\nNote: ${item.extraNote}` : ''),
         item.placeName || '-',
         item.quantity.toString(),
-        itemPriceAfterDiscount.toFixed(2), // Use item price after its own discount
-        (itemPriceAfterDiscount * item.quantity).toFixed(2)
+        displayUnitPrice.toLocaleString('en-IN'),
+        displayTotal.toLocaleString('en-IN')
       ]);
     });
 
     const grossTotal = totalPrice(finalQuote.items);
-    
-    // Calculate GST Base
-    let gstBase = finalQuote.items.reduce((sum, item) => {
-      const isService = item.product.category === 'Services';
-      const gstApplies = isService || item.includeGst !== false;
-      if (!gstApplies) return sum;
-
-      const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
-      if (isService) return sum + basePrice * item.quantity;
-      
-      const isPercentage = finalQuote.globalDiscountType === 'percentage';
-      const val = finalQuote.globalDiscountValue || 0;
-      const discounted = (isPercentage && item.includeDiscount !== false) ? basePrice * (1 - val / 100) : basePrice;
-      return sum + discounted * item.quantity;
-    }, 0);
-
-    // If adjustment (flat) applies, reduce GST base proportionally
-    if (finalQuote.globalDiscountType === 'flat') {
-      const val = finalQuote.globalDiscountValue || 0;
-      gstBase = gstBase * (1 - val / 100);
-    }
-
+    const gstBaseVal = computeGstBase(finalQuote.items, finalQuote.globalDiscountType, finalQuote.globalDiscountValue || 0);
+    const gstAmount = Math.round(gstBaseVal * 0.18);
+    const totalDiscountAmount = calculateTotalDiscount(finalQuote.items, finalQuote.globalDiscountType, finalQuote.globalDiscountValue || 0);
+    const grandTotal = grossTotal + gstAmount - totalDiscountAmount;
     const val = finalQuote.globalDiscountValue || 0;
-    const totalDiscountAmount = finalQuote.globalDiscountType === 'flat' 
-      ? Math.round(grossTotal * val / 100)
-      : finalQuote.items.reduce((sum, item) => {
-          if (item.product.category === 'Services' || item.includeDiscount === false) return sum;
-          const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
-          const itemDiscount = Math.round(basePrice * val / 100);
-          return sum + itemDiscount * item.quantity;
-        }, 0);
-
-    const netGstBase = Math.max(0, gstBase);
-    const gstAmount = Math.round(netGstBase * 0.18);
-    const grandTotal = (grossTotal - totalDiscountAmount) + gstAmount;
+    const isInclude = finalQuote.globalDiscountType === 'include';
 
     worksheetData.push(['']);
-    worksheetData.push(['', '', '', '', '', '', 'Gross Total', grossTotal.toLocaleString('en-IN')]);
-    if (totalDiscountAmount > 0) {
-      const label = finalQuote.globalDiscountType === 'flat' ? `Adjustment (${val}%)` : `Discount (${val}%)`;
-      worksheetData.push(['', '', '', '', '', '', label, `-${totalDiscountAmount.toLocaleString('en-IN')}`]);
-    }
-    worksheetData.push(['', '', '', '', '', '', 'Net Total', (grossTotal - totalDiscountAmount).toLocaleString('en-IN')]);
-    worksheetData.push(['', '', '', '', '', '', 'GST (18%)', gstAmount.toLocaleString('en-IN')]);
-    if (finalQuote.advanceAmount) {
-      worksheetData.push(['', '', '', '', '', '', 'Advance Paid', finalQuote.advanceAmount.toLocaleString('en-IN')]);
-      worksheetData.push(['', '', '', '', '', '', 'Balance Due', (grandTotal - finalQuote.advanceAmount).toLocaleString('en-IN')]);
+
+    if (finalQuote.globalDiscountType === 'exclude') {
+        // EXCLUDE FLOW: Gross -> Discount -> Net -> GST -> Final
+        worksheetData.push(['', '', '', '', '', '', 'Gross Total', Math.round(grossTotal).toLocaleString('en-IN')]);
+        if (totalDiscountAmount > 0) {
+            worksheetData.push(['', '', '', '', '', '', `Discount Exclude (${val}%)`, `-${Math.round(totalDiscountAmount).toLocaleString('en-IN')}`]);
+            worksheetData.push(['', '', '', '', '', '', 'Net Total', Math.round(grossTotal - totalDiscountAmount).toLocaleString('en-IN')]);
+        }
+        worksheetData.push(['', '', '', '', '', '', 'GST @18%', Math.round(gstAmount).toLocaleString('en-IN')]);
+    } else if (finalQuote.globalDiscountType === 'include') {
+        // INCLUDE FLOW: Gross (Incl GST) -> Discount -> Final
+        worksheetData.push(['', '', '', '', '', '', 'Total (Incl. GST)', Math.round(grossTotal).toLocaleString('en-IN')]);
+        if (totalDiscountAmount > 0) {
+            worksheetData.push(['', '', '', '', '', '', `Discount Include (${val}%)`, `-${Math.round(totalDiscountAmount).toLocaleString('en-IN')}`]);
+        }
     } else {
-      worksheetData.push(['', '', '', '', '', '', 'Grand Total', grandTotal.toLocaleString('en-IN')]);
+        // DEFAULT FLOW: Gross -> GST -> Final
+        worksheetData.push(['', '', '', '', '', '', 'Gross Total', Math.round(grossTotal).toLocaleString('en-IN')]);
+        if (gstAmount > 0) {
+            worksheetData.push(['', '', '', '', '', '', 'GST @18%', Math.round(gstAmount).toLocaleString('en-IN')]);
+        }
+    }
+
+    worksheetData.push(['', '', '', '', '', '', 'Final Amount', Math.round(grandTotal).toLocaleString('en-IN')]);
+    if (finalQuote.advanceAmount) {
+      worksheetData.push(['', '', '', '', '', '', 'Advance Paid', Math.round(finalQuote.advanceAmount).toLocaleString('en-IN')]);
+      worksheetData.push(['', '', '', '', '', '', 'Balance Due', Math.round(grandTotal - finalQuote.advanceAmount).toLocaleString('en-IN')]);
     }
 
     const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);

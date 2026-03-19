@@ -69,7 +69,7 @@ export interface Quotation {
   advanceAmount?: number;
   advanceDate?: string;
   manualRoundOff?: number;
-  globalDiscountType?: 'flat' | 'percentage';
+  globalDiscountType?: 'include' | 'exclude';
   globalDiscountValue?: number;
 }
 

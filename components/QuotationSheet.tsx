@@ -1,8 +1,7 @@
 
-
 import React, { useState } from 'react';
 import { Quotation, QuoteItem, Customer } from '../types';
-import { totalPrice, discountableSubtotal, servicesSubtotal } from '../utils';
+import { totalPrice, discountableSubtotal, servicesSubtotal, computeGstBase, calculateTotalDiscount } from '../utils';
 
 interface QuotationSheetProps {
     quote: Quotation;
@@ -19,46 +18,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
     const [editingField, setEditingField] = useState<string | null>(null);
     const [tempValue, setTempValue] = useState<string>('');
 
-    // Compute GST-able subtotal respecting per-item includeGst toggles
-    const computeGstBase = () => {
-        const grossGstBase = quote.items.reduce((sum, item) => {
-            const isService = item.product.category === 'Services';
-            const gstApplies = isService || item.includeGst !== false;
-            if (!gstApplies) return sum;
-
-            const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
-            if (isService) {
-                return sum + basePrice * item.quantity;
-            }
-            // Non-service: apply discount first (if applicable)
-            const isPercentage = quote.globalDiscountType === 'percentage';
-            const val = quote.globalDiscountValue || 0;
-            const discounted = (isPercentage && item.includeDiscount !== false) ? basePrice * (1 - val / 100) : basePrice;
-            return sum + discounted * item.quantity;
-        }, 0);
-
-        if (quote.globalDiscountType === 'flat') {
-            const val = quote.globalDiscountValue || 0;
-            return Math.max(0, grossGstBase * (1 - val / 100));
-        }
-        return grossGstBase;
-    };
-
-    const getTotalDiscount = () => {
-        const grossTotal = totalPrice(quote.items);
-        const val = quote.globalDiscountValue || 0;
-        
-        if (quote.globalDiscountType === 'flat') {
-            return Math.round(grossTotal * val / 100);
-        }
-
-        return quote.items.reduce((sum, item) => {
-            if (item.product.category === 'Services' || item.includeDiscount === false) return sum;
-            const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
-            const itemDiscount = Math.round(basePrice * val / 100);
-            return sum + itemDiscount * item.quantity;
-        }, 0);
-    };
+    // Using shared utilities from utils.ts
+    const gstBase = computeGstBase(quote.items, quote.globalDiscountType, quote.globalDiscountValue);
+    const totalDiscountAmount = calculateTotalDiscount(quote.items, quote.globalDiscountType, quote.globalDiscountValue);
 
     const startEdit = (field: string, currentValue: string | number) => {
         if (!isEditable) return;
@@ -294,38 +256,45 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 )}
 
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900">
-                                    {(i.customPrice !== undefined ? i.customPrice : i.product.price).toLocaleString('en-IN')}
+                                    {(() => {
+                                        const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
+                                        const p = i.includeGst !== false ? basePrice : basePrice / 1.18;
+                                        return Math.round(p).toLocaleString('en-IN');
+                                    })()}
                                 </td>
 
                                 {!isCustomerView && (
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-black text-slate-900">
                                         {(() => {
                                             const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
-                                            const isPercentage = quote.globalDiscountType === 'percentage';
+                                            const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
+                                            const isExclude = quote.globalDiscountType === 'exclude';
                                             const gDiscount = quote.globalDiscountValue || 0;
                                             const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
                                             
-                                            if (appliesDisc && isPercentage && gDiscount > 0) {
-                                                const discountAmount = basePrice * gDiscount / 100;
-                                                return Math.round(basePrice - discountAmount).toLocaleString('en-IN');
+                                            // Internal Unit Price shows the price with global discount if type is 'exclude'
+                                            if (appliesDisc && isExclude && gDiscount > 0) {
+                                                const discountAmount = effectivePrice * gDiscount / 100;
+                                                return Math.round(effectivePrice - discountAmount).toLocaleString('en-IN');
                                             }
-                                            return Math.round(basePrice).toLocaleString('en-IN');
+                                            return Math.round(effectivePrice).toLocaleString('en-IN');
                                         })()}
                                     </td>
                                 )}
 
-                                {!isCustomerView && (
+                                 {!isCustomerView && (
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-black text-indigo-700 bg-slate-50/30 relative">
                                         {/* Item Total */}
                                         {(() => {
-                                            const isPercentage = quote.globalDiscountType === 'percentage';
+                                            const isExclude = quote.globalDiscountType === 'exclude';
                                             const gDiscount = quote.globalDiscountValue || 0;
                                             const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
+                                            const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
                                             const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
                                             
-                                            const discountedPrice = (isPercentage && gDiscount > 0 && appliesDisc) 
-                                                ? basePrice * (1 - gDiscount / 100) 
-                                                : basePrice;
+                                            const discountedPrice = (isExclude && gDiscount > 0 && appliesDisc) 
+                                                ? effectivePrice * (1 - gDiscount / 100) 
+                                                : effectivePrice;
                                                 
                                             return Math.round(discountedPrice * i.quantity).toLocaleString('en-IN');
                                         })()}
@@ -387,8 +356,17 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 {isCustomerView && (
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-black text-slate-900">
                                         {(() => {
+                                            const isExclude = quote.globalDiscountType === 'exclude';
+                                            const gDiscount = quote.globalDiscountValue || 0;
                                             const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
-                                            return Math.round(basePrice * i.quantity).toLocaleString('en-IN');
+                                            const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
+                                            const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
+                                            
+                                            const discountedPrice = (isExclude && gDiscount > 0 && appliesDisc) 
+                                                ? effectivePrice * (1 - gDiscount / 100) 
+                                                : effectivePrice;
+                                            
+                                            return Math.round(discountedPrice * i.quantity).toLocaleString('en-IN');
                                         })()}
                                     </td>
                                 )}
@@ -398,38 +376,76 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                         {!isCustomerView && (
                             <>
                                 <tr>
-                                    <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Gross Total</td>
+                                    <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">
+                                        {quote.globalDiscountType === 'include' ? 'Gross Total (Incl. GST)' : 'Gross Total'}
+                                    </td>
                                     <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
-                                        {(() => {
-                                            const total = totalPrice(quote.items);
-                                            return total.toLocaleString('en-IN');
-                                        })()}
+                                        {totalPrice(quote.items).toLocaleString('en-IN')}
                                     </td>
                                 </tr>
-
-                                {quote.globalDiscountValue ? (
-                                    <tr>
-                                        <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-red-600 uppercase leading-none">
-                                            {quote.globalDiscountType === 'flat' ? 'Adjustment' : 'Discount'} ({quote.globalDiscountValue}%)
-                                        </td>
-                                        <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-red-600 leading-none">
-                                            - {getTotalDiscount().toLocaleString('en-IN')}
-                                        </td>
-                                    </tr>
-                                ) : null}
 
                                 {/* GST always shown: applies to net discountable amount + full services amount */}
-                                <tr>
-                                    <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
-                                    <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
-                                        {(() => {
-                                            const gstBase = computeGstBase();
-                                            const flatDiscount = quote.globalDiscountType === 'flat' ? (quote.globalDiscountValue || 0) : 0;
-                                            const netGstBase = Math.max(0, gstBase - flatDiscount);
-                                            return Math.round(netGstBase * 0.18).toLocaleString('en-IN');
-                                        })()}
-                                    </td>
-                                </tr>
+                                {quote.globalDiscountType === 'exclude' ? (
+                                    <>
+                                        {/* EXCLUDE FLOW: Gross -> Discount -> Net -> GST -> Final */}
+                                        {quote.globalDiscountValue ? (
+                                            <tr>
+                                                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-red-600 uppercase leading-none">
+                                                    Discount Exclude ({quote.globalDiscountValue}%)
+                                                </td>
+                                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-red-600 leading-none">
+                                                    - {totalDiscountAmount.toLocaleString('en-IN')}
+                                                </td>
+                                            </tr>
+                                        ) : null}
+                                        <tr>
+                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none">
+                                                Net Total
+                                            </td>
+                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
+                                                {(totalPrice(quote.items) - totalDiscountAmount).toLocaleString('en-IN')}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
+                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
+                                                {Math.round(gstBase * 0.18).toLocaleString('en-IN')}
+                                            </td>
+                                        </tr>
+                                    </>
+                                ) : quote.globalDiscountType === 'include' ? (
+                                    <>
+                                        {/* INCLUDE FLOW: Gross (Incl GST) -> Discount -> Final */}
+                                        <tr>
+                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none">
+                                                Total (Incl. GST)
+                                            </td>
+                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
+                                                {totalPrice(quote.items).toLocaleString('en-IN')}
+                                            </td>
+                                        </tr>
+                                        {quote.globalDiscountValue ? (
+                                            <tr>
+                                                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-red-600 uppercase leading-none">
+                                                    Discount Include ({quote.globalDiscountValue}%)
+                                                </td>
+                                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-red-600 leading-none">
+                                                    - {totalDiscountAmount.toLocaleString('en-IN')}
+                                                </td>
+                                            </tr>
+                                        ) : null}
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* DEFAULT FLOW (No discount): Gross -> GST -> Final */}
+                                        <tr>
+                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
+                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
+                                                {Math.round(gstBase * 0.18).toLocaleString('en-IN')}
+                                            </td>
+                                        </tr>
+                                    </>
+                                )}
 
                                 {quote.advanceAmount ? (
                                     <>
@@ -442,14 +458,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                             ₹{(() => {
                                                     const totalNoTax = totalPrice(quote.items);
-                                                    const discAmt = getTotalDiscount();
-                                                    const gstBase = computeGstBase();
-                                                    const val = quote.globalDiscountValue || 0;
-                                                    const flatDiscount = quote.globalDiscountType === 'flat' ? val : 0;
-                                                    const netGstBase = Math.max(0, gstBase - flatDiscount);
-                                                    const gstAmt = Math.round(netGstBase * 0.18);
+                                                    const gstAmt = Math.round(gstBase * 0.18);
                                                     
-                                                    const finalAmount = (totalNoTax - discAmt) + gstAmt;
+                                                    const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                                     return (finalAmount - quote.advanceAmount!).toLocaleString('en-IN');
                                                 })()}
                                             </td>
@@ -461,14 +472,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                             ₹{(() => {
                                                 const totalNoTax = totalPrice(quote.items);
-                                                const discAmt = getTotalDiscount();
-                                                const gstBase = computeGstBase();
-                                                const val = quote.globalDiscountValue || 0;
-                                                const flatDiscount = quote.globalDiscountType === 'flat' ? val : 0;
-                                                const netGstBase = Math.max(0, gstBase - flatDiscount);
-                                                const gstAmt = Math.round(netGstBase * 0.18);
+                                                const gstAmt = Math.round(gstBase * 0.18);
                                                 
-                                                const finalAmount = (totalNoTax - discAmt) + gstAmt;
+                                                const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                                 return finalAmount.toLocaleString('en-IN');
                                             })()}
                                         </td>
@@ -483,11 +489,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                     ₹{(() => {
                                         const totalNoTax = totalPrice(quote.items);
-                                        const discAmt = getTotalDiscount();
-                                        const gstBase = computeGstBase();
                                         const gstAmt = Math.round(gstBase * 0.18);
                                         
-                                        const finalAmount = (totalNoTax - discAmt) + gstAmt;
+                                        const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                         return finalAmount.toLocaleString('en-IN');
                                     })()}
                                 </td>
@@ -547,12 +551,12 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 </div>
                                 <div className="flex flex-col items-end">
                                     {(() => {
-                                        const isPercentage = quote.globalDiscountType === 'percentage';
+                                        const isExclude = quote.globalDiscountType === 'exclude';
                                         const gDiscount = quote.globalDiscountValue || 0;
                                         const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
                                         
                                         const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
-                                        const discountedPrice = (isPercentage && gDiscount > 0 && appliesDisc) 
+                                        const discountedPrice = (isExclude && gDiscount > 0 && appliesDisc) 
                                             ? basePrice * (1 - gDiscount / 100) 
                                             : basePrice;
                                             
@@ -573,24 +577,47 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 <span className="font-bold">{totalPrice(quote.items).toLocaleString('en-IN')}</span>
                             </div>
 
-                            {quote.globalDiscountValue ? (
-                                <div className="flex justify-between text-red-400">
-                                    <span>{quote.globalDiscountType === 'flat' ? 'Adjustment' : 'Discount'} ({quote.globalDiscountValue}%)</span>
-                                    <span className="font-bold">
-                                        -{getTotalDiscount().toLocaleString('en-IN')}
-                                    </span>
-                                </div>
-                            ) : null}
-
-                            <div className="flex justify-between">
-                                <span className="text-slate-400">GST @18%</span>
-                                <span className="font-bold">
-                                    {(() => {
-                                        const gstBase = computeGstBase();
-                                        return Math.round(gstBase * 0.18).toLocaleString('en-IN');
-                                    })()}
-                                </span>
-                            </div>
+                            {quote.globalDiscountType === 'exclude' ? (
+                                <>
+                                    {quote.globalDiscountValue ? (
+                                        <div className="flex justify-between text-red-400">
+                                            <span>Discount Exclude ({quote.globalDiscountValue}%)</span>
+                                            <span className="font-bold">-{totalDiscountAmount.toLocaleString('en-IN')}</span>
+                                        </div>
+                                    ) : null}
+                                    <div className="flex justify-between border-t border-slate-700 pt-1">
+                                        <span className="text-slate-300">Net Total</span>
+                                        <span className="font-bold">{(totalPrice(quote.items) - totalDiscountAmount).toLocaleString('en-IN')}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-400">GST @18%</span>
+                                        <span className="font-bold">{Math.round(gstBase * 0.18).toLocaleString('en-IN')}</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-400">GST @18%</span>
+                                        <span className="font-bold">{Math.round(gstBase * 0.18).toLocaleString('en-IN')}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-slate-700 pt-1">
+                                        <span className="text-slate-300">Total (Incl. GST)</span>
+                                        <span className="font-bold">
+                                            {(() => {
+                                                const totalNoTax = totalPrice(quote.items);
+                                                const gstAmt = Math.round(gstBase * 0.18);
+                                                return (totalNoTax + gstAmt).toLocaleString('en-IN');
+                                            })()}
+                                        </span>
+                                    </div>
+                                    {quote.globalDiscountValue ? (
+                                        <div className="flex justify-between text-red-400">
+                                            <span>Discount Include ({quote.globalDiscountValue}%)</span>
+                                            <span className="font-bold">-{totalDiscountAmount.toLocaleString('en-IN')}</span>
+                                        </div>
+                                    ) : null}
+                                </>
+                            )}
 
                             {quote.advanceAmount ? (
                                 <>
@@ -603,14 +630,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         <span className="font-bold text-green-400">
                                             ₹{(() => {
                                                 const totalNoTax = totalPrice(quote.items);
-                                                const discAmt = getTotalDiscount();
-                                                const gstBase = computeGstBase();
-                                                const val = quote.globalDiscountValue || 0;
-                                                const flatDiscount = quote.globalDiscountType === 'flat' ? val : 0;
-                                                const netGstBase = Math.max(0, gstBase - flatDiscount);
-                                                const gstAmt = Math.round(netGstBase * 0.18);
+                                                const gstAmt = Math.round(gstBase * 0.18);
                                                 
-                                                const finalAmount = (totalNoTax - discAmt) + gstAmt;
+                                                const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                                 return (finalAmount - quote.advanceAmount!).toLocaleString('en-IN');
                                             })()}
                                         </span>
@@ -622,14 +644,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     <span className="font-bold text-green-400">
                                         ₹{(() => {
                                             const totalNoTax = totalPrice(quote.items);
-                                            const discAmt = getTotalDiscount();
-                                            const gstBase = computeGstBase();
-                                            const val = quote.globalDiscountValue || 0;
-                                            const flatDiscount = quote.globalDiscountType === 'flat' ? val : 0;
-                                            const netGstBase = Math.max(0, gstBase - flatDiscount);
-                                            const gstAmt = Math.round(netGstBase * 0.18);
+                                            const gstAmt = Math.round(gstBase * 0.18);
                                             
-                                            const finalAmount = (totalNoTax - discAmt) + gstAmt;
+                                            const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                             return finalAmount.toLocaleString('en-IN');
                                         })()}
                                     </span>
@@ -644,16 +661,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 <span className="text-green-400 text-lg">
                                     ₹{(() => {
                                         const totalNoTax = totalPrice(quote.items);
-                                        const discSub = discountableSubtotal(quote.items);
-                                        const val = quote.globalDiscountValue || 0;
-                                        const discAmt = quote.globalDiscountType === 'percentage' ? Math.round(discSub * val / 100) : val;
+                                        const gstAmt = Math.round(gstBase * 0.18);
                                         
-                                        const gstBase = computeGstBase();
-                                        const flatDiscount = quote.globalDiscountType === 'flat' ? val : 0;
-                                        const netGstBase = Math.max(0, gstBase - flatDiscount);
-                                        const gstAmt = Math.round(netGstBase * 0.18);
-                                        
-                                        const finalAmount = (totalNoTax - discAmt) + gstAmt;
+                                        const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                         return finalAmount.toLocaleString('en-IN');
                                     })()}
                                 </span>
