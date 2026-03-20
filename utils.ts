@@ -68,8 +68,9 @@ export const calculateTotalDiscount = (items: QuoteItem[], globalDiscountType?: 
 
   if (globalDiscountType === 'include') {
     // Discount Include applies directly to the Gross Total (which already includes GST where applicable)
-    const grossTotal = totalPrice(items);
-    return Math.round(grossTotal * val / 100);
+    // Only includes items where discount is toggled ON
+    const discSubtotal = discountableSubtotal(items);
+    return Math.round(discSubtotal * val / 100);
   }
 
   return 0;

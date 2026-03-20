@@ -152,8 +152,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[6%]">S.NO.</th>
                             <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[24%]">MODEL & IMAGE</th>
                             {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[20%]">TECHNICAL DETAILS</th>}
-                            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[5%]">QTY</th>
                             {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[10%]">AREA</th>}
+                            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[5%]">QTY</th>
                             <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[12%]">PRICE</th>
                             {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[11%]">AFTER DISCOUNT</th>}
                             {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[20%]">TOTAL</th>}
@@ -163,7 +163,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                         {quote.items.map((i, idx) => (
                             <tr key={idx} className="border-[1.5px] border-slate-900 break-inside-avoid group relative transition-colors hover:bg-slate-50/50 group-hover:z-[100]">
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900">{idx + 1}</td>
-                                
+
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center">
                                     <div className="flex flex-col items-center justify-center space-y-2 print:space-y-0.5">
                                         <img
@@ -200,33 +200,6 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         </div>
                                     </td>
                                 )}
-
-                                <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900 group/qty">
-                                    {editingField === `qty-${idx}` ? (
-                                        <input
-                                            type="number"
-                                            value={tempValue}
-                                            onChange={(e) => setTempValue(e.target.value)}
-                                            onBlur={() => saveEdit(`qty-${idx}`)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') saveEdit(`qty-${idx}`);
-                                                if (e.key === 'Escape') cancelEdit();
-                                            }}
-                                            className="w-12 text-center border-b-2 border-indigo-500 outline-none bg-transparent font-bold"
-                                            autoFocus
-                                            min="1"
-                                        />
-                                    ) : (
-                                        <span
-                                            className="cursor-pointer hover:bg-indigo-50 px-2 py-1 rounded inline-block"
-                                            onClick={() => startEdit(`qty-${idx}`, i.quantity)}
-                                        >
-                                            {i.quantity}
-                                            {isEditable && <span className="ml-1 text-indigo-400 opacity-0 group-hover/qty:opacity-100 text-[10px]">✏️</span>}
-                                        </span>
-                                    )}
-                                </td>
-
                                 {!isCustomerView && (
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[11px] font-bold text-slate-900 leading-tight group/area">
                                         {editingField === `place-${idx}` ? (
@@ -255,6 +228,32 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     </td>
                                 )}
 
+                                <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900 group/qty">
+                                    {editingField === `qty-${idx}` ? (
+                                        <input
+                                            type="number"
+                                            value={tempValue}
+                                            onChange={(e) => setTempValue(e.target.value)}
+                                            onBlur={() => saveEdit(`qty-${idx}`)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') saveEdit(`qty-${idx}`);
+                                                if (e.key === 'Escape') cancelEdit();
+                                            }}
+                                            className="w-12 text-center border-b-2 border-indigo-500 outline-none bg-transparent font-bold"
+                                            autoFocus
+                                            min="1"
+                                        />
+                                    ) : (
+                                        <span
+                                            className="cursor-pointer hover:bg-indigo-50 px-2 py-1 rounded inline-block"
+                                            onClick={() => startEdit(`qty-${idx}`, i.quantity)}
+                                        >
+                                            {i.quantity}
+                                            {isEditable && <span className="ml-1 text-indigo-400 opacity-0 group-hover/qty:opacity-100 text-[10px]">✏️</span>}
+                                        </span>
+                                    )}
+                                </td>
+
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900">
                                     {(() => {
                                         const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
@@ -268,81 +267,69 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         {(() => {
                                             const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
                                             const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
-                                            const isExclude = quote.globalDiscountType === 'exclude';
                                             const gDiscount = quote.globalDiscountValue || 0;
                                             const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
-                                            
-                                            // Internal Unit Price shows the price with global discount if type is 'exclude'
-                                            if (appliesDisc && isExclude && gDiscount > 0) {
+
+                                            // Internal Unit Price shows the price with global discount if type is set
+                                            if (appliesDisc && quote.globalDiscountType && gDiscount > 0) {
                                                 const discountAmount = effectivePrice * gDiscount / 100;
                                                 return Math.round(effectivePrice - discountAmount).toLocaleString('en-IN');
                                             }
-                                            return Math.round(effectivePrice).toLocaleString('en-IN');
+                                            return (
+                                                <div className="flex flex-col items-center">
+                                                    <span>{Math.round(effectivePrice).toLocaleString('en-IN')}</span>
+                                                    {i.includeDiscount === false && i.product.category !== 'Services' && (
+                                                        <span className="text-[9px] text-red-600 font-bold uppercase mt-0.5 leading-none print:hidden">
+                                                            (Disc Off)
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
                                         })()}
                                     </td>
                                 )}
 
-                                 {!isCustomerView && (
+                                {!isCustomerView && (
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-black text-indigo-700 bg-slate-50/30 relative">
                                         {/* Item Total */}
                                         {(() => {
-                                            const isExclude = quote.globalDiscountType === 'exclude';
                                             const gDiscount = quote.globalDiscountValue || 0;
                                             const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
                                             const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
                                             const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
-                                            
-                                            const discountedPrice = (isExclude && gDiscount > 0 && appliesDisc) 
-                                                ? effectivePrice * (1 - gDiscount / 100) 
+
+                                            const discountedPrice = (quote.globalDiscountType && gDiscount > 0 && appliesDisc)
+                                                ? effectivePrice * (1 - gDiscount / 100)
                                                 : effectivePrice;
-                                                
+
                                             return Math.round(discountedPrice * i.quantity).toLocaleString('en-IN');
                                         })()}
 
                                         {/* Floating Actions Bar (Vertical Slim Capsule) */}
                                         {i.product.category !== 'Services' && (
                                             <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto flex flex-col items-center gap-2 p-2 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-[0_15px_40px_rgba(0,0,0,0.15)] z-[9999] print:hidden scale-95 group-hover:scale-100 origin-left after:content-[''] after:absolute after:-left-4 after:top-0 after:bottom-0 after:w-4 after:bg-transparent">
-                                                
+
                                                 {/* Style Toggle */}
                                                 <button
                                                     type="button"
                                                     onClick={() => onUpdateItemSetting?.(idx, 'showLineart', !i.showLineart)}
-                                                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex items-center justify-center border shadow-sm ${
-                                                        i.showLineart 
-                                                            ? 'bg-purple-600 text-white border-purple-700' 
+                                                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex items-center justify-center border shadow-sm ${i.showLineart
+                                                            ? 'bg-purple-600 text-white border-purple-700'
                                                             : 'bg-white text-purple-600 border-purple-100 hover:bg-purple-50'
-                                                    }`}
+                                                        }`}
                                                     title="Toggle Style"
                                                 >
                                                     {i.showLineart ? 'L' : 'S'}
-                                                </button>
-
-                                                <div className="w-full h-[1px] bg-slate-100"></div>
-
-                                                {/* GST Toggle */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => onUpdateItemSetting?.(idx, 'includeGst', !i.includeGst)}
-                                                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex flex-col items-center justify-center border shadow-sm ${
-                                                        i.includeGst !== false 
-                                                            ? 'bg-green-600 text-white border-green-700' 
-                                                            : 'bg-white text-green-600 border-green-100 hover:bg-green-50'
-                                                    }`}
-                                                    title="GST Toggle"
-                                                >
-                                                    <span className="scale-75">GST</span>
-                                                    <span className="text-[7px] mt-[-4px]">{i.includeGst !== false ? 'ON' : 'OFF'}</span>
                                                 </button>
 
                                                 {/* Discount Toggle */}
                                                 <button
                                                     type="button"
                                                     onClick={() => onUpdateItemSetting?.(idx, 'includeDiscount', !i.includeDiscount)}
-                                                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex flex-col items-center justify-center border shadow-sm ${
-                                                        i.includeDiscount !== false 
-                                                            ? 'bg-orange-600 text-white border-orange-700' 
+                                                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex flex-col items-center justify-center border shadow-sm ${i.includeDiscount !== false
+                                                            ? 'bg-orange-600 text-white border-orange-700'
                                                             : 'bg-white text-orange-600 border-orange-100 hover:bg-orange-50'
-                                                    }`}
+                                                        }`}
                                                     title="Discount Toggle"
                                                 >
                                                     <span className="scale-75">DISC</span>
@@ -356,16 +343,15 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 {isCustomerView && (
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-black text-slate-900">
                                         {(() => {
-                                            const isExclude = quote.globalDiscountType === 'exclude';
                                             const gDiscount = quote.globalDiscountValue || 0;
                                             const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
                                             const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
                                             const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
-                                            
-                                            const discountedPrice = (isExclude && gDiscount > 0 && appliesDisc) 
-                                                ? effectivePrice * (1 - gDiscount / 100) 
+
+                                            const discountedPrice = (quote.globalDiscountType && gDiscount > 0 && appliesDisc)
+                                                ? effectivePrice * (1 - gDiscount / 100)
                                                 : effectivePrice;
-                                            
+
                                             return Math.round(discountedPrice * i.quantity).toLocaleString('en-IN');
                                         })()}
                                     </td>
@@ -375,14 +361,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
                         {!isCustomerView && (
                             <>
-                                <tr>
-                                    <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">
-                                        {quote.globalDiscountType === 'include' ? 'Gross Total (Incl. GST)' : 'Gross Total'}
-                                    </td>
-                                    <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
-                                        {totalPrice(quote.items).toLocaleString('en-IN')}
-                                    </td>
-                                </tr>
+
 
                                 {/* GST always shown: applies to net discountable amount + full services amount */}
                                 {quote.globalDiscountType === 'exclude' ? (
@@ -390,10 +369,10 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         {/* EXCLUDE FLOW: Gross -> Discount -> Net -> GST -> Final */}
                                         {quote.globalDiscountValue ? (
                                             <tr>
-                                                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-red-600 uppercase leading-none">
-                                                    Discount Exclude ({quote.globalDiscountValue}%)
+                                                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none">
+                                                    discount ({quote.globalDiscountValue}%)
                                                 </td>
-                                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-red-600 leading-none">
+                                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-blue-600 leading-none">
                                                     - {totalDiscountAmount.toLocaleString('en-IN')}
                                                 </td>
                                             </tr>
@@ -415,10 +394,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     </>
                                 ) : quote.globalDiscountType === 'include' ? (
                                     <>
-                                        {/* INCLUDE FLOW: Gross (Incl GST) -> Discount -> Final */}
                                         <tr>
                                             <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none">
-                                                Total (Incl. GST)
+                                                Net Total (Inc. 18% GST)
                                             </td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
                                                 {totalPrice(quote.items).toLocaleString('en-IN')}
@@ -426,10 +404,10 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         </tr>
                                         {quote.globalDiscountValue ? (
                                             <tr>
-                                                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-red-600 uppercase leading-none">
-                                                    Discount Include ({quote.globalDiscountValue}%)
+                                                <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none">
+                                                    discount ({quote.globalDiscountValue}%)
                                                 </td>
-                                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-red-600 leading-none">
+                                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-blue-600 leading-none">
                                                     - {totalDiscountAmount.toLocaleString('en-IN')}
                                                 </td>
                                             </tr>
@@ -456,10 +434,10 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         <tr>
                                             <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Amount Paid</td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
-                                            ₹{(() => {
+                                                ₹{(() => {
                                                     const totalNoTax = totalPrice(quote.items);
                                                     const gstAmt = Math.round(gstBase * 0.18);
-                                                    
+
                                                     const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                                     return (finalAmount - quote.advanceAmount!).toLocaleString('en-IN');
                                                 })()}
@@ -473,7 +451,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             ₹{(() => {
                                                 const totalNoTax = totalPrice(quote.items);
                                                 const gstAmt = Math.round(gstBase * 0.18);
-                                                
+
                                                 const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                                 return finalAmount.toLocaleString('en-IN');
                                             })()}
@@ -490,7 +468,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     ₹{(() => {
                                         const totalNoTax = totalPrice(quote.items);
                                         const gstAmt = Math.round(gstBase * 0.18);
-                                        
+
                                         const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                         return finalAmount.toLocaleString('en-IN');
                                     })()}
@@ -507,15 +485,15 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             <div className="flex p-4 gap-4">
                                 {/* Image */}
                                 <div className="w-21 h-24 flex-shrink-0 bg-slate-50 rounded-lg flex items-center justify-center p-4 border overflow-hidden">
-                                        <img 
-                                            src={i.product.image} 
-                                            className="w-full h-full object-contain transition-all duration-300" 
-                                            alt={i.product.name}
-                                            style={i.showLineart ? {
-                                                filter: 'grayscale(1) contrast(1.8) brightness(1.2) invert(0)',
-                                                opacity: 0.85
-                                            } : {}}
-                                        />
+                                    <img
+                                        src={i.product.image}
+                                        className="w-full h-full object-contain transition-all duration-300"
+                                        alt={i.product.name}
+                                        style={i.showLineart ? {
+                                            filter: 'grayscale(1) contrast(1.8) brightness(1.2) invert(0)',
+                                            opacity: 0.85
+                                        } : {}}
+                                    />
                                 </div>
                                 {/* Header Info */}
                                 <div className="flex-1 min-w-0">
@@ -551,17 +529,24 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 </div>
                                 <div className="flex flex-col items-end">
                                     {(() => {
-                                        const isExclude = quote.globalDiscountType === 'exclude';
                                         const gDiscount = quote.globalDiscountValue || 0;
                                         const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
-                                        
+                                        const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
+
                                         const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
-                                        const discountedPrice = (isExclude && gDiscount > 0 && appliesDisc) 
-                                            ? basePrice * (1 - gDiscount / 100) 
-                                            : basePrice;
-                                            
+                                        const discountedPrice = (quote.globalDiscountType && gDiscount > 0 && appliesDisc)
+                                            ? effectivePrice * (1 - gDiscount / 100)
+                                            : effectivePrice;
+
                                         return (
-                                            <span className="font-black text-indigo-700 text-base">₹{Math.round(discountedPrice * i.quantity).toLocaleString('en-IN')}</span>
+                                            <div className="flex flex-col items-end">
+                                                <span className="font-black text-indigo-700 text-base">₹{Math.round(discountedPrice * i.quantity).toLocaleString('en-IN')}</span>
+                                                {i.includeDiscount === false && i.product.category !== 'Services' && (
+                                                    <span className="text-[9px] text-red-600 font-bold uppercase mt-0.5 leading-none px-1 py-0.5 bg-red-50 rounded print:hidden">
+                                                        Disc Off
+                                                    </span>
+                                                )}
+                                            </div>
                                         );
                                     })()}
                                 </div>
@@ -580,8 +565,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             {quote.globalDiscountType === 'exclude' ? (
                                 <>
                                     {quote.globalDiscountValue ? (
-                                        <div className="flex justify-between text-red-400">
-                                            <span>Discount Exclude ({quote.globalDiscountValue}%)</span>
+                                        <div className="flex justify-between text-blue-400">
+                                            <span>discount ({quote.globalDiscountValue}%)</span>
                                             <span className="font-bold">-{totalDiscountAmount.toLocaleString('en-IN')}</span>
                                         </div>
                                     ) : null}
@@ -597,22 +582,12 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             ) : (
                                 <>
                                     <div className="flex justify-between">
-                                        <span className="text-slate-400">GST @18%</span>
-                                        <span className="font-bold">{Math.round(gstBase * 0.18).toLocaleString('en-IN')}</span>
-                                    </div>
-                                    <div className="flex justify-between border-t border-slate-700 pt-1">
-                                        <span className="text-slate-300">Total (Incl. GST)</span>
-                                        <span className="font-bold">
-                                            {(() => {
-                                                const totalNoTax = totalPrice(quote.items);
-                                                const gstAmt = Math.round(gstBase * 0.18);
-                                                return (totalNoTax + gstAmt).toLocaleString('en-IN');
-                                            })()}
-                                        </span>
+                                        <span className="text-slate-400">Net Total (Inc. 18% GST)</span>
+                                        <span className="font-bold">{totalPrice(quote.items).toLocaleString('en-IN')}</span>
                                     </div>
                                     {quote.globalDiscountValue ? (
-                                        <div className="flex justify-between text-red-400">
-                                            <span>Discount Include ({quote.globalDiscountValue}%)</span>
+                                        <div className="flex justify-between text-blue-400">
+                                            <span>discount ({quote.globalDiscountValue}%)</span>
                                             <span className="font-bold">-{totalDiscountAmount.toLocaleString('en-IN')}</span>
                                         </div>
                                     ) : null}
@@ -631,7 +606,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             ₹{(() => {
                                                 const totalNoTax = totalPrice(quote.items);
                                                 const gstAmt = Math.round(gstBase * 0.18);
-                                                
+
                                                 const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                                 return (finalAmount - quote.advanceAmount!).toLocaleString('en-IN');
                                             })()}
@@ -645,7 +620,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         ₹{(() => {
                                             const totalNoTax = totalPrice(quote.items);
                                             const gstAmt = Math.round(gstBase * 0.18);
-                                            
+
                                             const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                             return finalAmount.toLocaleString('en-IN');
                                         })()}
@@ -662,7 +637,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     ₹{(() => {
                                         const totalNoTax = totalPrice(quote.items);
                                         const gstAmt = Math.round(gstBase * 0.18);
-                                        
+
                                         const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                         return finalAmount.toLocaleString('en-IN');
                                     })()}
@@ -677,25 +652,25 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                         {/* Banking Details */}
                         <div className="space-y-3 no-print-break w-full">
                             <h4 className="text-sm font-bold text-slate-900 border-b pb-1.5 uppercase tracking-tight">Banking Details (RTGS / NEFT)</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1.5 text-xs text-slate-600">
+                            <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-x-8 gap-y-1.5 text-xs">
                                 <div className="flex">
-                                    <span className="w-28 font-bold text-slate-400">Company Name</span>
+                                    <span className="w-28 font-bold text-slate-900">Company Name</span>
                                     <span className="font-bold text-slate-800">Magnific Home Appliances</span>
                                 </div>
                                 <div className="flex">
-                                    <span className="w-28 font-bold text-slate-400">Branch</span>
+                                    <span className="w-28 font-bold text-slate-900">Branch</span>
                                     <span className="font-bold text-slate-800">Koramangala</span>
                                 </div>
                                 <div className="flex">
-                                    <span className="w-28 font-bold text-slate-400">Bank Name</span>
-                                    <span className="font-bold text-slate-800">Axis Bank</span>
+                                    <span className="w-28 font-bold text-slate-900">Bank Name</span>
+                                    <span className="font-bold text-slate-800 uppercase">Axis Bank</span>
                                 </div>
                                 <div className="flex">
-                                    <span className="w-28 font-bold text-slate-400">IFSC Code</span>
+                                    <span className="w-28 font-bold text-slate-900">IFSC Code</span>
                                     <span className="font-bold text-indigo-700 tracking-wider">UTIB0000194</span>
                                 </div>
                                 <div className="flex">
-                                    <span className="w-28 font-bold text-slate-400">Account No</span>
+                                    <span className="w-28 font-bold text-slate-900">Account No</span>
                                     <span className="font-bold text-indigo-700 tracking-wider">924030028295392</span>
                                 </div>
                             </div>
