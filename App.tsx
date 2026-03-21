@@ -93,7 +93,7 @@ export default function App() {
         const getImageUrl = (img: string) => {
           if (!img) return '';
           if (img.startsWith('http')) return img;
-          return `/Assets/products/${img}`;
+          return `/assets/products/${img}`;
         };
 
         const mappedProducts: Product[] = data.map((p: any) => ({
@@ -326,8 +326,7 @@ export default function App() {
 
   const handleCreateQuotation = async () => {
     setIsGenerating(true);
-    // const aiSummary = await generateQuoteSummary(cart);
-    const aiSummary = "Generated Quote";
+    const aiSummary = "Professional Quotation";
 
     const quote: Quotation = {
       id: isEditMode && editingQuoteId ? editingQuoteId : `MQ-${Date.now().toString().slice(-6)}`,
@@ -558,7 +557,7 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center cursor-pointer" onClick={() => { setIsCustomerView(false); navigate('/'); }}>
               <div className="logo">
-                <img src="./assets/magnific-web.png" alt="magnific" className="h-12 w-auto object-contain" />
+                <img src="/assets/magnific-web.png" alt="magnific" className="h-12 w-auto object-contain" />
               </div>
             </div>
             <div className="flex items-center space-x-4">
