@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Quotation, QuoteItem, Customer } from '../types';
 import { totalPrice, discountableSubtotal, servicesSubtotal, computeGstBase, calculateTotalDiscount } from '../utils';
+import UPIScanner from './UPIScanner';
 
 interface QuotationSheetProps {
     quote: Quotation;
@@ -649,30 +650,50 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
                 <div className="mt-6 pt-4 border-t border-slate-200 print-compact print:mt-1 print:pt-1">
                     <div className="flex flex-col gap-6 print:gap-3">
-                        {/* Banking Details */}
-                        <div className="space-y-3 no-print-break w-full">
-                            <h4 className="text-sm font-bold text-slate-900 border-b pb-1.5 uppercase tracking-tight">Banking Details (RTGS / NEFT)</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-x-8 gap-y-1.5 text-xs">
-                                <div className="flex">
-                                    <span className="w-28 font-bold text-slate-900">Company Name</span>
-                                    <span className="font-bold text-slate-800">Magnific Home Appliances</span>
+                        {/* Banking Details & UPI QR */}
+                        <div className="flex flex-col md:flex-row print:flex-row gap-6 items-start no-print-break w-full">
+                            <div className="flex-1 space-y-3">
+                                <h4 className="text-sm font-bold text-slate-900 border-b pb-1.5 uppercase tracking-tight">Banking Details (RTGS / NEFT)</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-x-8 gap-y-1.5 text-xs">
+                                    <div className="flex">
+                                        <span className="w-28 font-bold text-slate-900">Company Name</span>
+                                        <span className="font-bold text-slate-800">Magnific Home Appliances</span>
+                                    </div>
+                                    <div className="flex">
+                                        <span className="w-28 font-bold text-slate-900">Branch</span>
+                                        <span className="font-bold text-slate-800">Koramangala</span>
+                                    </div>
+                                    <div className="flex">
+                                        <span className="w-28 font-bold text-slate-900">Bank Name</span>
+                                        <span className="font-bold text-slate-800 uppercase">Axis Bank</span>
+                                    </div>
+                                    <div className="flex">
+                                        <span className="w-28 font-bold text-slate-900">IFSC Code</span>
+                                        <span className="font-bold text-indigo-700 tracking-wider">UTIB0000194</span>
+                                    </div>
+                                    <div className="flex">
+                                        <span className="w-28 font-bold text-slate-900">Account No</span>
+                                        <span className="font-bold text-indigo-700 tracking-wider">924030028295392</span>
+                                    </div>
                                 </div>
-                                <div className="flex">
-                                    <span className="w-28 font-bold text-slate-900">Branch</span>
-                                    <span className="font-bold text-slate-800">Koramangala</span>
-                                </div>
-                                <div className="flex">
-                                    <span className="w-28 font-bold text-slate-900">Bank Name</span>
-                                    <span className="font-bold text-slate-800 uppercase">Axis Bank</span>
-                                </div>
-                                <div className="flex">
-                                    <span className="w-28 font-bold text-slate-900">IFSC Code</span>
-                                    <span className="font-bold text-indigo-700 tracking-wider">UTIB0000194</span>
-                                </div>
-                                <div className="flex">
-                                    <span className="w-28 font-bold text-slate-900">Account No</span>
-                                    <span className="font-bold text-indigo-700 tracking-wider">924030028295392</span>
-                                </div>
+                            </div>
+                            
+                            {/* UPI Scanner Column */}
+                            <div className="w-full md:w-56 print:w-48 flex-shrink-0">
+                                {(() => {
+                                    const totalNoTax = totalPrice(quote.items);
+                                    const gstAmt = Math.round(gstBase * 0.18);
+                                    const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
+                                    const balanceDue = quote.advanceAmount ? Math.max(0, finalAmount - quote.advanceAmount) : finalAmount;
+                                    
+                                    return (
+                                        <UPIScanner 
+                                            amount={Math.round(balanceDue)} 
+                                            quotationId={quote.id || 'NEW'} 
+                                            customerName={quote.customer.name} 
+                                        />
+                                    );
+                                })()}
                             </div>
                         </div>
                     </div>
