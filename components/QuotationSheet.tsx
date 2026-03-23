@@ -428,7 +428,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 {quote.advanceAmount ? (
                                     <>
                                         <tr>
-                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Advance ({quote.advanceDate || 'N/A'})</td>
+                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Advance</td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{quote.advanceAmount.toLocaleString('en-IN')}</td>
                                         </tr>
                                         <tr>

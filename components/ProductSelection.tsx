@@ -44,6 +44,24 @@ export default function ProductSelection({
     const [sizeFilter, setSizeFilter] = useState('All');
     const [finishingFilter, setFinishingFilter] = useState('All');
 
+    // Auto-open custom modal if action=add-custom is in URL
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('action') === 'add-custom') {
+            setSelectedProduct({
+                id: 'custom-item',
+                name: '',
+                modelNumber: 'CUSTOM',
+                description: '',
+                price: 0,
+                category: 'Custom',
+                image: 'https://cdn-icons-png.flaticon.com/512/3588/3588647.png'
+            });
+            // Clear the param without reloading
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, []);
+
     // Dropdown open states
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [isColorOpen, setIsColorOpen] = useState(false);

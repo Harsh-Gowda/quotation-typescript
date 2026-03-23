@@ -366,13 +366,23 @@ export default function App() {
   };
 
   // Inline editing handlers
-  const handleUpdateCustomer = (updates: Partial<Customer>) => {
+  const handleUpdateCustomer = (updates: Partial<Customer & { advanceAmount?: number; advanceDate?: string }>) => {
     if (!finalQuote) return;
-    setFinalQuote({
-      ...finalQuote,
-      customer: { ...finalQuote.customer, ...updates }
-    });
-    setIsSaved(false); // Mark as unsaved when edited
+    
+    // Check if advanceAmount is in updates
+    const newQuote = { ...finalQuote };
+    if ('advanceAmount' in updates) {
+      newQuote.advanceAmount = updates.advanceAmount;
+    }
+    if ('advanceDate' in updates) {
+      newQuote.advanceDate = updates.advanceDate;
+    }
+    
+    // Also update the customer object part
+    newQuote.customer = { ...newQuote.customer, ...updates };
+    
+    setFinalQuote(newQuote);
+    setIsSaved(false);
   };
 
   const handleUpdateItemQuantity = (index: number, quantity: number) => {

@@ -40,16 +40,7 @@ export default function CustomerEntry({ customer, setCustomer }: CustomerEntryPr
                                 <input type="tel" className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 text-slate-900 font-medium transition-all" placeholder="+91 00000 00000" value={customer.phone} onChange={e => setCustomer({ ...customer, phone: e.target.value })} />
                             </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Advance Paid (₹)</label>
-                                <input type="number" className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 text-slate-900 font-medium transition-all" placeholder="Ex: 50000" value={customer.advanceAmount || ''} onChange={e => setCustomer({ ...customer, advanceAmount: Number(e.target.value) })} />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Advance Date</label>
-                                <input type="text" className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 text-slate-900 font-medium transition-all" placeholder="DD.MM.YYYY" value={customer.advanceDate || ''} onChange={e => setCustomer({ ...customer, advanceDate: e.target.value })} />
-                            </div>
-                        </div>
+
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Project Site Address</label>
                             <textarea rows={4} className="w-full p-3.5 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 text-slate-900 font-medium transition-all" placeholder="Enter complete site address for quotation..." value={customer.address} onChange={e => setCustomer({ ...customer, address: e.target.value })} />
