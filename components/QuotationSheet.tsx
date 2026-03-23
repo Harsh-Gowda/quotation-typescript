@@ -315,8 +315,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                                     type="button"
                                                     onClick={() => onUpdateItemSetting?.(idx, 'showLineart', !i.showLineart)}
                                                     className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex items-center justify-center border shadow-sm ${i.showLineart
-                                                            ? 'bg-purple-600 text-white border-purple-700'
-                                                            : 'bg-white text-purple-600 border-purple-100 hover:bg-purple-50'
+                                                        ? 'bg-purple-600 text-white border-purple-700'
+                                                        : 'bg-white text-purple-600 border-purple-100 hover:bg-purple-50'
                                                         }`}
                                                     title="Toggle Style"
                                                 >
@@ -328,8 +328,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                                     type="button"
                                                     onClick={() => onUpdateItemSetting?.(idx, 'includeDiscount', !i.includeDiscount)}
                                                     className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex flex-col items-center justify-center border shadow-sm ${i.includeDiscount !== false
-                                                            ? 'bg-orange-600 text-white border-orange-700'
-                                                            : 'bg-white text-orange-600 border-orange-100 hover:bg-orange-50'
+                                                        ? 'bg-orange-600 text-white border-orange-700'
+                                                        : 'bg-white text-orange-600 border-orange-100 hover:bg-orange-50'
                                                         }`}
                                                     title="Discount Toggle"
                                                 >
@@ -651,47 +651,48 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                 <div className="mt-6 pt-4 border-t border-slate-200 print-compact print:mt-1 print:pt-1">
                     <div className="flex flex-col gap-6 print:gap-3">
                         {/* Banking Details & UPI QR */}
-                        <div className="flex flex-col md:flex-row print:flex-row gap-6 items-start no-print-break w-full">
-                            <div className="flex-1 space-y-3">
-                                <h4 className="text-sm font-bold text-slate-900 border-b pb-1.5 uppercase tracking-tight">Banking Details (RTGS / NEFT)</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-x-8 gap-y-1.5 text-xs">
-                                    <div className="flex">
-                                        <span className="w-28 font-bold text-slate-900">Company Name</span>
-                                        <span className="font-bold text-slate-800">Magnific Home Appliances</span>
+                        <div className="flex flex-col md:flex-row print:flex-row gap-12 items-start justify-between no-print-break w-full">
+                            {/* Banking Column */}
+                            <div className="flex-1 flex flex-col items-start">
+                                <h4 className="text-[10px] font-black text-indigo-700 border-b-2 border-indigo-700 pb-2 mb-4 uppercase tracking-[0.2em] w-full text-left">Banking Details (RTGS / NEFT)</h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-center text-[10px]">
+                                        <span className="w-28 font-black text-slate-500 uppercase tracking-widest leading-none">Company Name</span>
+                                        <span className="font-bold text-slate-900 uppercase leading-none">Magnific Home Appliances</span>
                                     </div>
-                                    <div className="flex">
-                                        <span className="w-28 font-bold text-slate-900">Branch</span>
-                                        <span className="font-bold text-slate-800">Koramangala</span>
+                                    <div className="flex items-center text-[10px]">
+                                        <span className="w-28 font-black text-slate-500 uppercase tracking-widest leading-none">Bank & Branch</span>
+                                        <span className="font-bold text-slate-900 uppercase leading-none">Axis Bank Gottigere </span>
                                     </div>
-                                    <div className="flex">
-                                        <span className="w-28 font-bold text-slate-900">Bank Name</span>
-                                        <span className="font-bold text-slate-800 uppercase">Axis Bank</span>
+                                    <div className="flex items-center text-[10px]">
+                                        <span className="w-28 font-black text-slate-500 uppercase tracking-widest leading-none">A/c No</span>
+                                        <span className="font-black text-indigo-700 tracking-wider text-xs leading-none">926030005650178</span>
                                     </div>
-                                    <div className="flex">
-                                        <span className="w-28 font-bold text-slate-900">IFSC Code</span>
-                                        <span className="font-bold text-indigo-700 tracking-wider">UTIB0000194</span>
-                                    </div>
-                                    <div className="flex">
-                                        <span className="w-28 font-bold text-slate-900">Account No</span>
-                                        <span className="font-bold text-indigo-700 tracking-wider">924030028295392</span>
+                                    <div className="flex items-center text-[10px]">
+                                        <span className="w-28 font-black text-slate-500 uppercase tracking-widest leading-none">IFSC Code</span>
+                                        <span className="font-black text-indigo-700 tracking-[0.2em] text-xs uppercase leading-none">UTIB0004071</span>
                                     </div>
                                 </div>
                             </div>
-                            
-                            {/* UPI Scanner Column */}
-                            <div className="w-full md:w-56 print:w-48 flex-shrink-0">
+
+                            {/* UPI Column */}
+                            <div className="w-full md:w-56 print:w-48 flex-shrink-0 flex flex-col items-start">
+                                <h4 className="text-[10px] font-black text-indigo-700 border-b-2 border-indigo-700 pb-2 mb-4 uppercase tracking-[0.2em] w-full text-left">Secure UPI Payment</h4>
                                 {(() => {
                                     const totalNoTax = totalPrice(quote.items);
                                     const gstAmt = Math.round(gstBase * 0.18);
                                     const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                     const balanceDue = quote.advanceAmount ? Math.max(0, finalAmount - quote.advanceAmount) : finalAmount;
-                                    
+
                                     return (
-                                        <UPIScanner 
-                                            amount={Math.round(balanceDue)} 
-                                            quotationId={quote.id || 'NEW'} 
-                                            customerName={quote.customer.name} 
-                                        />
+                                        <div className="text-left w-full flex flex-col items-start">
+                                            <p className="text-[8px] text-slate-500 font-bold uppercase mb-4">Scan to pay balance: <span className="text-indigo-600">₹{Math.round(balanceDue).toLocaleString('en-IN')}</span></p>
+                                            <UPIScanner
+                                                amount={Math.round(balanceDue)}
+                                                quotationId={quote.id || 'NEW'}
+                                                customerName={quote.customer.name}
+                                            />
+                                        </div>
                                     );
                                 })()}
                             </div>
@@ -707,8 +708,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 "Validity: 15 Days from the date of quotation.",
                                 "Payment: 50% of advance to be paid while booking, 100% payment before delivery.",
                                 "If applicable: Kindly ensure your GST details are provided prior to the dispatch of the product. No changes can be made once the invoice is generated.",
-                                "No refunds will be issued unless there is an error on the company's part.",
-                                "Delivery of the product will only be considered once the customer's cheque has been issued and cleared. Until that time, no delivery can be expected, so customers should plan accordingly.",
+                                "No refunds will be issued unless there is an error on the company's part. ",
+                                "Delivery of the product will only be considered once the customer’s cheque has been issued and cleared. Until that time, no delivery can be expected, so customers should plan accordingly.",
                                 "Company is not responsible for any breakage.",
                                 "Goods once sold cannot be taken back or exchanged.",
                                 "Request you to co-operate until delivery is done.",
