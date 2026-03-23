@@ -128,10 +128,10 @@ export default function ProductSelection({
         // Apply search filter
         if (term) {
             filtered = filtered.filter(p =>
-                p.name.toLowerCase().includes(term) ||
-                p.modelNumber.toLowerCase().includes(term) ||
-                p.description.toLowerCase().includes(term) ||
-                p.category.toLowerCase().includes(term)
+                (p.name || '').toLowerCase().includes(term) ||
+                (p.modelNumber || '').toLowerCase().includes(term) ||
+                (p.description || '').toLowerCase().includes(term) ||
+                (p.category || '').toLowerCase().includes(term)
             );
         }
 

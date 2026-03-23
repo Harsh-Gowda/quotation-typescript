@@ -12,14 +12,12 @@
     <script>
         window.Ghost = window.Ghost || { q: [] };
 
-        // Initialize tracker pointing to your new Edge Worker!
+        // Notice: siteKey and ingestUrl are the correct names!
         Ghost.q.push(['init', {
-            siteId: 'ghost_test_key_abc123',
-            endpoint: 'https://ingest.inktypelabs.in/api/ingest'
+            siteKey: 'ghost_test_key_abc123',
+            ingestUrl: 'https://ingest.inktypelabs.in/api/ingest',
+            consentMode: 'implicit' // Auto-grants analytics consent for this test
         }]);
-
-        // We explicitly grant consent for this internal test so it tracks immediately
-        Ghost.q.push(['grantConsent']);
     </script>
     <script async src="https://pub-959ba9b1435842fcb63c3f83314db149.r2.dev/sdk/ghost.min.js"></script>
     <style>
