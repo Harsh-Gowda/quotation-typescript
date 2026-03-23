@@ -42,12 +42,12 @@ export const computeGstBase = (items: QuoteItem[], globalDiscountType?: 'include
     const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
     const val = globalDiscountValue || 0;
     const isExclude = globalDiscountType === 'exclude';
-    
+
     let effectivePrice = item.includeGst !== false ? basePrice : basePrice / 1.18;
     if (isExclude && item.includeDiscount !== false) {
       effectivePrice = effectivePrice * (1 - val / 100);
     }
-    
+
     return sum + effectivePrice * item.quantity;
   }, 0);
 };
@@ -67,7 +67,7 @@ export const calculateTotalDiscount = (items: QuoteItem[], globalDiscountType?: 
   }
 
   if (globalDiscountType === 'include') {
-    // Discount Include applies directly to the Gross Total (which already includes GST where applicable)
+    // GST Include applies directly to the Gross Total (which already includes GST where applicable)
     // Only includes items where discount is toggled ON
     const discSubtotal = discountableSubtotal(items);
     return Math.round(discSubtotal * val / 100);

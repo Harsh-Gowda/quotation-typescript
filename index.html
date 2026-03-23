@@ -12,11 +12,11 @@
     <script>
         window.Ghost = window.Ghost || { q: [] };
 
-        // Notice: siteKey and ingestUrl are the correct names!
+        // This is the important part to fix!
         Ghost.q.push(['init', {
             siteKey: 'ghost_test_key_abc123',
             ingestUrl: 'https://ingest.inktypelabs.in/api/ingest',
-            consentMode: 'implicit' // Auto-grants analytics consent for this test
+            consentMode: 'implicit'
         }]);
     </script>
     <script async src="https://pub-959ba9b1435842fcb63c3f83314db149.r2.dev/sdk/ghost.min.js"></script>

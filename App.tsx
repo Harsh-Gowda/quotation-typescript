@@ -165,13 +165,13 @@ export default function App() {
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountValue`);
   };
 
-  const addToCart = (product: Product, options: { 
-    placeName?: string, 
-    size?: string, 
-    color?: string, 
-    lamp?: string, 
-    discount?: number, 
-    customDescription?: string, 
+  const addToCart = (product: Product, options: {
+    placeName?: string,
+    size?: string,
+    color?: string,
+    lamp?: string,
+    discount?: number,
+    customDescription?: string,
     extraNote?: string,
     customPrice?: number,
     customName?: string,
@@ -222,15 +222,15 @@ export default function App() {
             : item
         );
       }
-      return [...prev, { 
-        product, 
-        quantity: options.quantity || 1, 
-        placeName: trimmedPlace, 
-        size: trimmedSize, 
-        color: trimmedColor, 
-        lamp: trimmedLamp, 
-        customDescription: trimmedDesc, 
-        extraNote: trimmedNote, 
+      return [...prev, {
+        product,
+        quantity: options.quantity || 1,
+        placeName: trimmedPlace,
+        size: trimmedSize,
+        color: trimmedColor,
+        lamp: trimmedLamp,
+        customDescription: trimmedDesc,
+        extraNote: trimmedNote,
         discount: discountVal,
         customPrice: cPrice,
         customName: cName,
@@ -449,12 +449,12 @@ export default function App() {
     finalQuote.items.forEach((item, idx) => {
       const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
       const effectivePrice = item.includeGst !== false ? basePrice : basePrice / 1.18;
-      
+
       // Internal Unit Price shows the price with global discount if type is 'exclude'
       const isExclude = finalQuote.globalDiscountType === 'exclude';
       const gDiscount = finalQuote.globalDiscountValue || 0;
       const appliesDisc = item.product.category !== 'Services' && item.includeDiscount !== false;
-      
+
       let unitPrice = effectivePrice;
       if (appliesDisc && isExclude && gDiscount > 0) {
         unitPrice = effectivePrice * (1 - gDiscount / 100);
@@ -486,25 +486,25 @@ export default function App() {
     worksheetData.push(['']);
 
     if (finalQuote.globalDiscountType === 'exclude') {
-        // EXCLUDE FLOW: Gross -> Discount -> Net -> GST -> Final
-        worksheetData.push(['', '', '', '', '', '', 'Gross Total', Math.round(grossTotal).toLocaleString('en-IN')]);
-        if (totalDiscountAmount > 0) {
-            worksheetData.push(['', '', '', '', '', '', `Discount Exclude (${val}%)`, `-${Math.round(totalDiscountAmount).toLocaleString('en-IN')}`]);
-            worksheetData.push(['', '', '', '', '', '', 'Net Total', Math.round(grossTotal - totalDiscountAmount).toLocaleString('en-IN')]);
-        }
-        worksheetData.push(['', '', '', '', '', '', 'GST @18%', Math.round(gstAmount).toLocaleString('en-IN')]);
+      // EXCLUDE FLOW: Gross -> Discount -> Net -> GST -> Final
+      worksheetData.push(['', '', '', '', '', '', 'Gross Total', Math.round(grossTotal).toLocaleString('en-IN')]);
+      if (totalDiscountAmount > 0) {
+        worksheetData.push(['', '', '', '', '', '', `GST Exclude (${val}%)`, `-${Math.round(totalDiscountAmount).toLocaleString('en-IN')}`]);
+        worksheetData.push(['', '', '', '', '', '', 'Net Total', Math.round(grossTotal - totalDiscountAmount).toLocaleString('en-IN')]);
+      }
+      worksheetData.push(['', '', '', '', '', '', 'GST @18%', Math.round(gstAmount).toLocaleString('en-IN')]);
     } else if (finalQuote.globalDiscountType === 'include') {
-        // INCLUDE FLOW: Gross (Incl GST) -> Discount -> Final
-        worksheetData.push(['', '', '', '', '', '', 'Total (Incl. GST)', Math.round(grossTotal).toLocaleString('en-IN')]);
-        if (totalDiscountAmount > 0) {
-            worksheetData.push(['', '', '', '', '', '', `Discount Include (${val}%)`, `-${Math.round(totalDiscountAmount).toLocaleString('en-IN')}`]);
-        }
+      // INCLUDE FLOW: Gross (Incl GST) -> Discount -> Final
+      worksheetData.push(['', '', '', '', '', '', 'Total (Incl. GST)', Math.round(grossTotal).toLocaleString('en-IN')]);
+      if (totalDiscountAmount > 0) {
+        worksheetData.push(['', '', '', '', '', '', `GST Include (${val}%)`, `-${Math.round(totalDiscountAmount).toLocaleString('en-IN')}`]);
+      }
     } else {
-        // DEFAULT FLOW: Gross -> GST -> Final
-        worksheetData.push(['', '', '', '', '', '', 'Gross Total', Math.round(grossTotal).toLocaleString('en-IN')]);
-        if (gstAmount > 0) {
-            worksheetData.push(['', '', '', '', '', '', 'GST @18%', Math.round(gstAmount).toLocaleString('en-IN')]);
-        }
+      // DEFAULT FLOW: Gross -> GST -> Final
+      worksheetData.push(['', '', '', '', '', '', 'Gross Total', Math.round(grossTotal).toLocaleString('en-IN')]);
+      if (gstAmount > 0) {
+        worksheetData.push(['', '', '', '', '', '', 'GST @18%', Math.round(gstAmount).toLocaleString('en-IN')]);
+      }
     }
 
     worksheetData.push(['', '', '', '', '', '', 'Final Amount', Math.round(grandTotal).toLocaleString('en-IN')]);

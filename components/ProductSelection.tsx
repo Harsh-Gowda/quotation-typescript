@@ -645,13 +645,13 @@ export default function ProductSelection({
                                         onClick={() => setDiscountType(discountType === 'include' ? null : 'include')}
                                         className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'include' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
                                     >
-                                        Discount Include
+                                        GST Include
                                     </button>
                                     <button
                                         onClick={() => setDiscountType(discountType === 'exclude' ? null : 'exclude')}
                                         className={`flex-1 py-1.5 text-xs font-bold rounded-md border transition-all ${discountType === 'exclude' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300 hover:border-indigo-400'}`}
                                     >
-                                        Discount Exclude
+                                        GST Exclude
                                     </button>
                                 </div>
 
@@ -676,7 +676,7 @@ export default function ProductSelection({
                                             <span>Subtotal:</span>
                                             <span>₹{subtotal.toLocaleString('en-IN')}</span>
                                         </div>
-                                        
+
                                         {(() => {
                                             const gstBaseVal = computeGstBase(cart, discountType || undefined, discountValue);
                                             const gstAmount = Math.round(gstBaseVal * 0.18);
@@ -687,7 +687,7 @@ export default function ProductSelection({
                                                 return (
                                                     <>
                                                         <div className="flex justify-between text-red-500 font-medium">
-                                                            <span>Discount Exclude ({discountValue}%):</span>
+                                                            <span>GST Exclude ({discountValue}%):</span>
                                                             <span>-₹{discAmount.toLocaleString('en-IN')}</span>
                                                         </div>
                                                         <div className="flex justify-between font-bold text-slate-900 pt-1">
@@ -708,7 +708,7 @@ export default function ProductSelection({
                                                 return (
                                                     <>
                                                         <div className="flex justify-between text-red-500 font-medium">
-                                                            <span>Discount Include ({discountValue}%):</span>
+                                                            <span>GST Include ({discountValue}%):</span>
                                                             <span>-₹{discAmount.toLocaleString('en-IN')}</span>
                                                         </div>
                                                         <div className="flex justify-between font-black text-indigo-700 pt-1 border-t border-dashed">
