@@ -80,7 +80,7 @@ interface ProductModalProps {
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <div className="flex items-center space-x-2">
-                                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">{isCustom ? 'Custom Item' : product.category}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isCustom ? 'Custom Item' : product.category}</span>
                                     {!isCustom && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono font-bold">{product.modelNumber}</span>}
                                 </div>
                                 {isCustom ? (

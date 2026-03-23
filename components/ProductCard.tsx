@@ -18,11 +18,9 @@ export default function ProductCard({ product, onAddClick, inCartQty = 0 }: Prod
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full group transition-all hover:shadow-md cursor-pointer" onClick={onAddClick}>
             <div className="relative h-64 overflow-hidden bg-white p-4 flex items-center justify-center border-b">
                 <img src={activeImg} alt={product.name} className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105" />
-                <div className="absolute top-3 right-3 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">{product.category}</div>
                 {inCartQty > 0 && (
-                    <div className="absolute top-3 left-3 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm flex items-center">
-                        <span className="w-2 h-2 bg-white rounded-full mr-1.5 animate-pulse"></span>
-                        {inCartQty} Added
+                    <div className="absolute top-3 left-3 bg-green-500 text-white text-[10px] font-bold h-5 min-w-[20px] px-1.5 rounded-full shadow-sm flex items-center justify-center border border-white">
+                        {inCartQty}
                     </div>
                 )}
             </div>

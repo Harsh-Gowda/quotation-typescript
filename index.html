@@ -9,6 +9,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        window.Ghost = window.Ghost || { q: [] };
+
+        // Initialize tracker pointing to your new Edge Worker!
+        Ghost.q.push(['init', {
+            siteId: 'ghost_test_key_abc123',
+            endpoint: 'https://ingest.inktypelabs.in/api/ingest'
+        }]);
+
+        // We explicitly grant consent for this internal test so it tracks immediately
+        Ghost.q.push(['grantConsent']);
+    </script>
+    <script async src="https://pub-959ba9b1435842fcb63c3f83314db149.r2.devsdk/ghost.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
