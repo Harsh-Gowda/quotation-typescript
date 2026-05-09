@@ -32,8 +32,14 @@ interface ProductModalProps {
             product.size && `Size: ${product.size}`,
             product.lamp && `Lamp: ${product.lamp}`,
             product.finishing && `Finish: ${product.finishing}`,
+            product.bodyColor && `Color: ${product.bodyColor}`,
+            product.bladeType && `Blade Type: ${product.bladeType}`,
             product.sweep && `Sweep: ${product.sweep}`,
-            product.motorSpec && `Motor: ${product.motorSpec}`
+            product.heightOfFan && `Height: ${product.heightOfFan}`,
+            product.motorSpec && `Motor: ${product.motorSpec}`,
+            product.airflow && `Airflow: ${product.airflow}`,
+            product.suitableFor && `Suitable For: ${product.suitableFor}`,
+            product.lightOption && `Light: ${product.lightOption}`
         ].filter(Boolean).join('\n');
 
         const [description, setDescription] = useState(defaultDescription);

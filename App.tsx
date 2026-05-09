@@ -74,65 +74,103 @@ export default function App() {
       setIsCustomerView(true);
     }
 
-    // Fetch Products from Supabase
+    // Fetch Products from Supabase (new schema: product_variants → product_templates → product_categories)
     const fetchProducts = async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*');
+      let allData: any[] = [];
+      let fetchMore = true;
+      let from = 0;
+      const limit = 1000;
 
-      if (error) {
-        console.error('Error fetching products from Supabase:', error);
-        setIsLoadingProducts(false);
-        return;
-      }
+      while (fetchMore) {
+        const { data, error } = await supabase
+          .from('product_variants')
+          .select(`
+            *,
+            product_templates (
+              name,
+              description,
+              product_categories (
+                name
+              )
+            )
+          `)
+          .range(from, from + limit - 1);
 
-      console.log('Supabase Data Received:', data);
-
-      if (data) {
-        // Map snake_case from DB to camelCase in Product interface
-        const getImageUrl = (img: string) => {
-          if (!img) return '';
-          if (img.startsWith('http')) return img;
-          return `/assets/products/${img}`;
-        };
-
-        const mappedProducts: Product[] = data.map((p: any) => ({
-          id: p.product_id,
-          name: p.name,
-          modelNumber: p.model_number,
-          description: p.description || '',
-          price: parseFloat(p.showroom_price || '0'),
-          category: p.category,
-          image: p.images && p.images.length > 0 ? getImageUrl(p.images[0]) : '',
-          gallery: p.images && p.images.length > 1 ? p.images.slice(1).map(getImageUrl) : [],
-          suitableFor: p.technical_details?.suitable_for,
-          motorSpec: p.technical_details?.motor_spec,
-          noOfBlades: p.technical_details?.no_of_blades,
-          bodyColor: p.body_finish,
-          bladeFinish: p.technical_details?.blade_finish,
-          lightOption: p.technical_details?.light_option,
-          sweep: p.technical_details?.sweep,
-          airflow: p.technical_details?.airflow,
-          heightOfFan: p.technical_details?.height_of_fan,
-          remoteControl: p.technical_details?.remote_control,
-          summerWinterOption: p.technical_details?.summer_winter_option,
-          bladeMechanism: p.technical_details?.blade_mechanism,
-          reversibleBlade: p.technical_details?.reversible_blade,
-          oscillationRotation: p.technical_details?.oscillation_rotation,
-          bladeType: p.technical_details?.blade_type,
-          suitablePlace: p.technical_details?.suitable_place,
-          size: p.technical_details?.size || p.size,
-          lamp: p.technical_details?.lamp,
-          finishing: p.technical_details?.finishing || p.body_finish
-        }));
-
-        console.log('Mapped Products:', mappedProducts);
-
-        if (mappedProducts.length > 0) {
-          setProducts(mappedProducts);
+        if (error) {
+          console.error('❌ Supabase error:', error.message);
+          console.error('Details:', error.details, '| Hint:', error.hint);
+          setIsLoadingProducts(false);
+          return;
         }
 
-        // If we have data in URL, wait for products to load before restoring
+        if (data && data.length > 0) {
+          allData = [...allData, ...data];
+          from += limit;
+          if (data.length < limit) {
+            fetchMore = false;
+          }
+        } else {
+          fetchMore = false;
+        }
+      }
+
+      const data = allData;
+
+      console.log(`✅ product_variants returned ${data.length} rows`);
+      if (data.length > 0) {
+        console.log('Sample row:', data[0]);
+      } else {
+        console.warn('⚠️ No rows returned. Run migrations/05_rls_policies.sql in Supabase SQL Editor to enable reads, and verify 04_variants.sql was executed.');
+      }
+
+      if (data && data.length > 0) {
+        const mappedProducts: Product[] = data
+          .filter((v: any) => v.isSellable !== false) // client-side filter — avoids column-casing issues
+          .map((v: any) => {
+            const template = v.product_templates || {};
+            const category = template.product_categories || {};
+            const media = v.attributes?.media || {};
+            
+            // Fan technical details are directly on attributes, older products might have them in technicalDetails
+            const tech = v.attributes?.technicalDetails || v.attributes || {};
+
+            const primaryImg: string = media.primaryImage || media.images?.[0] || '';
+            const allImages: string[] = media.images || (primaryImg ? [primaryImg] : []);
+
+            return {
+              id:          v.variantId,
+              name:        template.name || v.variantName,
+              modelNumber: template.name || v.sku,
+              description: template.description || '',
+              price:       parseFloat(v.showroomPrice ?? v.catalogPrice ?? '0'),
+              category:    category.name || '',
+              image:       primaryImg,
+              gallery:     allImages.slice(1),
+              suitableFor:         tech.suitable_for,
+              motorSpec:           tech.motor_spec,
+              noOfBlades:          tech.no_of_blades,
+              bodyColor:           v.finish || tech.body_color || tech.colour,
+              bladeFinish:         tech.blade_finish,
+              lightOption:         tech.light_option,
+              sweep:               tech.sweep,
+              airflow:             tech.airflow,
+              heightOfFan:         tech.height_of_fan,
+              remoteControl:       tech.remote_control,
+              summerWinterOption:  tech.summer_winter_option,
+              bladeMechanism:      tech.blade_mechanism,
+              reversibleBlade:     tech.reversible_blade,
+              oscillationRotation: tech.oscillation_rotation,
+              bladeType:           tech.blade_type,
+              suitablePlace:       tech.suitable_place,
+              size:                v.size || tech.size,
+              lamp:                tech.lamp,
+              finishing:           v.finish || tech.finishing,
+            };
+          });
+
+        console.log(`✅ Mapped ${mappedProducts.length} sellable products`);
+        setProducts(mappedProducts);
+
         if (dataParam) {
           try {
             const decoded = JSON.parse(decodeURIComponent(escape(atob(dataParam))));
@@ -140,11 +178,10 @@ export default function App() {
               ...item,
               product: mappedProducts.find(prod => prod.id === item.productId)
             })).filter((item: any) => item.product);
-
             setFinalQuote({ ...decoded, items: restoredItems });
             navigate('/preview');
           } catch (e) {
-            console.error("Failed to decode QR data", e);
+            console.error('Failed to decode QR data', e);
           }
         }
       }
@@ -567,7 +604,7 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div className="flex items-center cursor-pointer" onClick={() => { setIsCustomerView(false); navigate('/'); }}>
               <div className="logo">
-                <img src="/assets/magnific-web.png" alt="magnific" className="h-12 w-auto object-contain" />
+                <img src="/images/magnific-web.png" alt="magnific" className="h-12 w-auto object-contain" />
               </div>
             </div>
             <div className="flex items-center space-x-4">

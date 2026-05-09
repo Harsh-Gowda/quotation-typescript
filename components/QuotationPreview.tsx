@@ -53,7 +53,12 @@ export default function QuotationPreview({
                         <button onClick={onSave} disabled={isSaved} className={`flex items-center px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-sm ${isSaved ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'}`}>
                             {isSaved ? <CheckIcon /> : <SaveIcon />} {isSaved ? 'Saved' : 'Save Quote'}
                         </button>
-                        <button onClick={() => window.print()} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm">
+                        <button onClick={() => {
+                            const originalTitle = document.title;
+                            document.title = '\u200b'; // Zero-width space to hide title
+                            window.print();
+                            document.title = originalTitle;
+                        }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm">
                             Print PDF
                         </button>
                         <button onClick={() => { onNewQuote(); navigate('/'); }} className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-sm ml-4">

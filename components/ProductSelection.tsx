@@ -120,15 +120,6 @@ export default function ProductSelection({
     const filteredProducts = useMemo(() => {
         const specialProducts: Product[] = [
             {
-                id: 'customization-charge',
-                name: 'Service Card',
-                modelNumber: 'SRV-CUST',
-                description: 'Charges for customizing the product to specific requirements.',
-                price: 0,
-                category: 'Services',
-                image: 'https://cdn-icons-png.flaticon.com/512/3588/3588647.png',
-            },
-            {
                 id: 'fan-installation',
                 name: 'Fan Installation',
                 modelNumber: 'SRV-INST',

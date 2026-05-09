@@ -65,7 +65,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                 <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-2">
                     <div>
                         <div className="mb-2">
-                            <img src="./Assets/magnific-web.png" alt="website logo" className="w-[100px] font-black text-indigo-600 tracking-tighter italic mb-4" />
+                            <img src="/images/magnific-web.png" alt="website logo" className="w-[100px] font-black text-indigo-600 tracking-tighter italic mb-4" />
                             <div className="flex items-center space-x-2 mt-[-4px]">
 
                                 <div className="h-[1px] bg-slate-400 flex-1"></div>
