@@ -71,6 +71,7 @@ export default function App() {
   // Edit Mode State
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [isViewOnly, setIsViewOnly] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -749,10 +750,12 @@ export default function App() {
                   setDiscountValue(0);
                   setIsEditMode(false);
                   setEditingQuoteId(null);
+                  setIsViewOnly(false);
                   navigate('/');
                 }}
                 isPublicMode={isPublicMode}
                 isCustomerView={isCustomerView}
+                viewOnly={isViewOnly}
               />
             ) : (
               // Redirect if no quote
@@ -772,6 +775,7 @@ export default function App() {
                 setDiscountType(q.globalDiscountType || null);
                 setDiscountValue(q.globalDiscountValue || 0);
                 setIsSaved(true);
+                setIsViewOnly(true);
                 navigate('/preview');
               }}
               onEdit={(q) => {
@@ -781,6 +785,7 @@ export default function App() {
                 setDiscountValue(q.globalDiscountValue || 0);
                 setIsEditMode(true);
                 setEditingQuoteId(q.id);
+                setIsViewOnly(false);
                 navigate('/catalog');
               }}
               onDelete={deleteSaved}
