@@ -418,7 +418,8 @@ export default function App() {
       advanceAmount: customer.advanceAmount,
       advanceDate: customer.advanceDate,
       globalDiscountType: discountType || undefined,
-      globalDiscountValue: discountValue || undefined
+      globalDiscountValue: discountValue || undefined,
+      createdBy: loggedInUser?.name || 'Unknown'
     };
 
     setFinalQuote(quote);
@@ -507,6 +508,11 @@ export default function App() {
     setIsEditMode(false);
     setEditingQuoteId(null);
     resetDraft();
+
+    // Auto-print after saving
+    setTimeout(() => {
+      window.print();
+    }, 300);
   };
 
   const deleteSaved = (e: React.MouseEvent, id: string) => {
@@ -758,6 +764,7 @@ export default function App() {
           <Route path="/saved" element={
             <SavedQuotes
               savedQuotes={savedQuotes}
+              currentUser={loggedInUser?.name || ''}
               onLoad={(q) => {
                 setFinalQuote(q);
                 setCustomer(q.customer);

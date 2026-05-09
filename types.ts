@@ -71,6 +71,7 @@ export interface Quotation {
   manualRoundOff?: number;
   globalDiscountType?: 'include' | 'exclude';
   globalDiscountValue?: number;
+  createdBy?: string;
 }
 
 export type ViewState = 'CUSTOMER_ENTRY' | 'PRODUCT_SELECTION' | 'PREVIEW' | 'SAVED_QUOTES';
