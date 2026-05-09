@@ -33,11 +33,27 @@ export default function App() {
   const handleLogin = (user: { name: string; role: string }) => {
     setLoggedInUser(user);
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+    
+    // Clear draft data to start fresh on login
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_customer`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_cart`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountType`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountValue`);
+    
+    // Reload to guarantee all states reset
+    window.location.reload();
   };
 
   const handleLogout = () => {
     setLoggedInUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
+    
+    // Clear draft data on logout as well
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_customer`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_cart`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountType`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountValue`);
+    
     navigate('/');
   };
 
