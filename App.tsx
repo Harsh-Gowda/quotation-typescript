@@ -13,10 +13,33 @@ import CustomerEntry from './components/CustomerEntry';
 import ProductSelection from './components/ProductSelection';
 import QuotationPreview from './components/QuotationPreview';
 import SavedQuotes from './components/SavedQuotes';
+import LoginPage from './components/LoginPage';
+
+const AUTH_STORAGE_KEY = 'magnific_auth_user';
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Auth State
+  const [loggedInUser, setLoggedInUser] = useState<{ name: string; role: string } | null>(() => {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (raw) {
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+    return null;
+  });
+
+  const handleLogin = (user: { name: string; role: string }) => {
+    setLoggedInUser(user);
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setLoggedInUser(null);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    navigate('/');
+  };
 
   // Global State
   const [customer, setCustomer] = useState<Customer & { advanceAmount?: number, advanceDate?: string }>(() => {
@@ -361,12 +384,32 @@ export default function App() {
     });
   };
 
+  // Generate quotation ID in format: ALI-260509-1 (NAME-YYMMDD-DAILY_COUNT)
+  const generateQuotationId = (): string => {
+    const userName = loggedInUser?.name || 'USR';
+    const prefix = userName.substring(0, 3).toUpperCase();
+
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const dateStr = `${yy}${mm}${dd}`;
+
+    // Daily counter stored in localStorage, resets each day per user prefix
+    const counterKey = `magnific_quote_counter_${prefix}_${dateStr}`;
+    const stored = localStorage.getItem(counterKey);
+    let counter = stored ? parseInt(stored, 10) + 1 : 1;
+    localStorage.setItem(counterKey, String(counter));
+
+    return `${prefix}-${dateStr}-${counter}`;
+  };
+
   const handleCreateQuotation = async () => {
     setIsGenerating(true);
     const aiSummary = "Professional Quotation";
 
     const quote: Quotation = {
-      id: isEditMode && editingQuoteId ? editingQuoteId : `MQ-${Date.now().toString().slice(-6)}`,
+      id: isEditMode && editingQuoteId ? editingQuoteId : generateQuotationId(),
       customer,
       items: cart,
       date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -576,6 +619,13 @@ export default function App() {
 
   const subtotal = totalPrice(cart);
 
+  // If not logged in and not a public/customer view URL, show login
+  const params = new URLSearchParams(window.location.search);
+  const isPublicUrl = params.get('view') === 'customer';
+  if (!loggedInUser && !isPublicUrl) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
       <style>{`
@@ -614,6 +664,25 @@ export default function App() {
               {location.pathname === '/preview' && (
                 <div className="text-xs font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">
                   {isSaved ? 'Saved Locally' : 'Unsaved Draft'}
+                </div>
+              )}
+              {loggedInUser && (
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
+                    <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-white">{loggedInUser.name.charAt(0)}</span>
+                    </div>
+                    <span className="text-xs font-bold text-indigo-700">{loggedInUser.name}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                    title="Sign Out"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
                 </div>
               )}
             </div>
