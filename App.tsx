@@ -242,6 +242,23 @@ export default function App() {
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountValue`);
   };
 
+  /** Called by ProductModal after an image is successfully saved to Supabase.
+   *  Updates the local products list and any matching cart items immediately. */
+  const handleProductImageSaved = (productId: string, newImageUrl: string) => {
+    // Update products state so the catalog card refreshes
+    setProducts(prev =>
+      prev.map(p => p.id === productId ? { ...p, image: newImageUrl } : p)
+    );
+    // Also update any cart items referencing this product
+    setCart(prev =>
+      prev.map(item =>
+        item.product.id === productId
+          ? { ...item, product: { ...item.product, image: newImageUrl }, customImage: undefined }
+          : item
+      )
+    );
+  };
+
   const addToCart = (product: Product, options: {
     placeName?: string,
     size?: string,
@@ -253,6 +270,7 @@ export default function App() {
     customPrice?: number,
     customName?: string,
     customModelNumber?: string,
+    customImage?: string,
     isCustom?: boolean,
     quantity?: number
   }) => {
@@ -266,6 +284,7 @@ export default function App() {
     const cPrice = options.customPrice;
     const cName = options.customName?.trim() || '';
     const cModel = options.customModelNumber?.trim() || '';
+    const cImage = options.customImage || '';
     const isC = options.isCustom || false;
 
     setCart(prev => {
@@ -312,6 +331,7 @@ export default function App() {
         customPrice: cPrice,
         customName: cName,
         customModelNumber: cModel,
+        customImage: cImage || undefined,
         isCustom: isC,
         showLineart: false,
         includeGst: true,
@@ -394,7 +414,8 @@ export default function App() {
         lamp: options.lamp,
         customDescription: options.customDescription,
         extraNote: options.extraNote,
-        discount: options.discount
+        discount: options.discount,
+        customImage: options.customImage !== undefined ? options.customImage : oldItem.customImage,
       };
       newCart[index] = newItem;
       return newCart;
@@ -742,6 +763,7 @@ export default function App() {
               isEditMode={isEditMode}
               editingQuoteId={editingQuoteId}
               isLoading={isLoadingProducts}
+              onProductImageSaved={handleProductImageSaved}
             />
           } />
 

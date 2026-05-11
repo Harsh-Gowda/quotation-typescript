@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Product } from '../types';
 import { BackIcon, EditIcon, CartIcon } from './Icons';
+import { supabase } from '../services/supabase';
 
 interface ProductModalProps {
     product: Product;
@@ -17,13 +18,16 @@ interface ProductModalProps {
         customPrice?: number,
         customName?: string,
         customModelNumber?: string,
+        customImage?: string,
         isCustom?: boolean,
         quantity?: number
     }) => void;
     initialValues?: any;
+    /** Called after a permanent image URL has been saved to Supabase so the parent can refresh its product list */
+    onImageSaved?: (productId: string, newImageUrl: string) => void;
 }
 
-    export default function ProductModal({ product, onClose, onAdd, initialValues }: ProductModalProps) {
+    export default function ProductModal({ product, onClose, onAdd, initialValues, onImageSaved }: ProductModalProps) {
         const isCustom = product.id === 'custom-item' || product.id === 'fan-installation' || initialValues?.isCustom;
         const [name, setName] = useState(initialValues?.customName || product.name);
         const [modelNumber, setModelNumber] = useState(initialValues?.customModelNumber || product.modelNumber);
@@ -46,9 +50,83 @@ interface ProductModalProps {
         const [extraNote, setExtraNote] = useState(initialValues?.extraNote || '');
         const [customPrice, setCustomPrice] = useState<string>(initialValues?.customPrice !== undefined ? String(initialValues.customPrice) : '');
         const [quantity, setQuantity] = useState<number>(initialValues?.quantity || 1);
+        // customImage stores either a local blob URL (during upload) or the final Supabase public URL
+        const [customImage, setCustomImage] = useState<string>(initialValues?.customImage || product.image || '');
+        const [isUploading, setIsUploading] = useState(false);
+        const [uploadError, setUploadError] = useState('');
+        const [uploadSuccess, setUploadSuccess] = useState(false);
+        const fileInputRef = useRef<HTMLInputElement>(null);
 
-        const activeImg = product.image;
-        const gallery = [product.image, ...(product.gallery || [])];
+        const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            // Show local preview immediately
+            const localUrl = URL.createObjectURL(file);
+            setCustomImage(localUrl);
+            setIsUploading(true);
+            setUploadError('');
+            setUploadSuccess(false);
+
+            try {
+                // 1. Upload file to Supabase Storage
+                const ext = file.name.split('.').pop() || 'jpg';
+                const storagePath = `products/${product.id}.${ext}`;
+
+                const { error: uploadErr } = await supabase.storage
+                    .from('product-images')
+                    .upload(storagePath, file, { upsert: true, contentType: file.type });
+
+                if (uploadErr) throw new Error(uploadErr.message);
+
+                // 2. Get the public URL
+                const { data: urlData } = supabase.storage
+                    .from('product-images')
+                    .getPublicUrl(storagePath);
+
+                const publicUrl = urlData.publicUrl;
+
+                // 3. Update product_variants attributes.media.primaryImage in DB
+                // First fetch existing attributes
+                const { data: variantData, error: fetchErr } = await supabase
+                    .from('product_variants')
+                    .select('attributes')
+                    .eq('variantId', product.id)
+                    .single();
+
+                if (!fetchErr && variantData) {
+                    const existingAttrs = variantData.attributes || {};
+                    const updatedAttrs = {
+                        ...existingAttrs,
+                        media: {
+                            ...(existingAttrs.media || {}),
+                            primaryImage: publicUrl,
+                            images: [publicUrl, ...(existingAttrs.media?.images || []).filter((img: string) => img !== publicUrl)]
+                        }
+                    };
+
+                    await supabase
+                        .from('product_variants')
+                        .update({ attributes: updatedAttrs })
+                        .eq('variantId', product.id);
+                }
+
+                // 4. Swap local blob URL for permanent public URL
+                setCustomImage(publicUrl);
+                setUploadSuccess(true);
+                // Notify parent to refresh product list
+                onImageSaved?.(product.id, publicUrl);
+
+            } catch (err: any) {
+                setUploadError(err.message || 'Upload failed');
+                // Keep local preview so user can still add to quote
+            } finally {
+                setIsUploading(false);
+            }
+        };
+
+        const displayImage = customImage || product.image;
+        const isMissingImage = !product.image && !customImage;
 
         const handleAdd = () => {
             const addOptions: any = {
@@ -65,6 +143,9 @@ interface ProductModalProps {
             if ((product.category === 'Services' || isCustom) && customPrice !== '') {
                 addOptions.customPrice = Number(customPrice);
             }
+            if (customImage) {
+                addOptions.customImage = customImage;
+            }
             onAdd(addOptions);
         };
 
@@ -74,12 +155,72 @@ interface ProductModalProps {
                     {/* Left Side: Images */}
                     <div className="md:w-1/2 bg-slate-100 flex flex-col">
                         <div className="relative flex-1 min-h-[300px]">
-                            <img src={activeImg} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+                            {displayImage ? (
+                                <img src={displayImage} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+                            ) : (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 text-slate-400">
+                                    <svg className="w-16 h-16 mb-2 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    <span className="text-xs font-bold text-slate-400">No Image Available</span>
+                                </div>
+                            )}
                             <button onClick={onClose} className="absolute top-4 left-4 md:hidden bg-white/80 p-2 rounded-full shadow-md text-slate-800">
                                 <BackIcon />
                             </button>
+                            {/* Upload / Change Image Button */}
+                            <button
+                                type="button"
+                                onClick={() => !isUploading && fileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className={`absolute bottom-3 right-3 flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all disabled:cursor-not-allowed ${
+                                    isUploading
+                                        ? 'bg-indigo-500 text-white'
+                                        : isMissingImage
+                                        ? 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse'
+                                        : 'bg-white/90 hover:bg-white text-slate-700 border border-slate-200'
+                                }`}
+                                title={isMissingImage ? 'This product has no image — upload one' : 'Change product image (saves to database)'}
+                            >
+                                {isUploading ? (
+                                    <>
+                                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                        <span>Saving...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                        <span>{isMissingImage ? 'Upload Image' : 'Change Image'}</span>
+                                    </>
+                                )}
+                            </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleImageUpload}
+                            />
                         </div>
-                   </div>
+                        {/* Status bar below image */}
+                        {uploadError && (
+                            <div className="px-3 py-2 bg-red-50 border-t border-red-100 flex items-center space-x-2">
+                                <svg className="w-3.5 h-3.5 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span className="text-[10px] font-bold text-red-700 flex-1">Upload failed: {uploadError}</span>
+                                <span className="text-[10px] text-slate-500">(image kept locally for this quote)</span>
+                            </div>
+                        )}
+                        {uploadSuccess && (
+                            <div className="px-3 py-2 bg-green-50 border-t border-green-100 flex items-center space-x-2">
+                                <svg className="w-3.5 h-3.5 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                <span className="text-[10px] font-bold text-green-700">✓ Image saved to database permanently!</span>
+                            </div>
+                        )}
+                        {isUploading && (
+                            <div className="px-3 py-2 bg-indigo-50 border-t border-indigo-100 flex items-center space-x-2">
+                                <svg className="w-3.5 h-3.5 animate-spin text-indigo-500 flex-shrink-0" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                <span className="text-[10px] font-bold text-indigo-700">Uploading & saving to database...</span>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Right Side: Configuration */}
                     <div className="md:w-1/2 p-8 flex flex-col">

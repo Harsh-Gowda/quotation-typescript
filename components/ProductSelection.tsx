@@ -24,12 +24,13 @@ interface ProductSelectionProps {
     isEditMode?: boolean;
     editingQuoteId?: string | null;
     isLoading?: boolean;
+    onProductImageSaved?: (productId: string, newImageUrl: string) => void;
 }
 
 export default function ProductSelection({
     cart, products, addToCart, removeFromCart, updateQuantity, updateCartItem, subtotal,
     discountType, setDiscountType, discountValue, setDiscountValue,
-    onGenerateQuote, isGenerating, isEditMode, editingQuoteId, isLoading
+    onGenerateQuote, isGenerating, isEditMode, editingQuoteId, isLoading, onProductImageSaved
 }: ProductSelectionProps) {
 
     const navigate = useNavigate();
@@ -587,6 +588,7 @@ export default function ProductSelection({
                     product={selectedProduct || cart[editingIndex!].product}
                     initialValues={editingIndex !== null ? cart[editingIndex!] : undefined}
                     onClose={() => { setSelectedProduct(null); setEditingIndex(null); }}
+                    onImageSaved={onProductImageSaved}
                     onAdd={(options) => {
                         const fullOptions = {
                             ...options,

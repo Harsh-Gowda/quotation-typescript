@@ -167,15 +167,22 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center">
                                     <div className="flex flex-col items-center justify-center space-y-2 print:space-y-0.5">
-                                        <img
-                                            src={i.product.image}
-                                            className="w-24 h-24 print:w-14 print:h-14 object-contain transition-all duration-300"
-                                            alt={i.customName || i.product.name}
-                                            style={i.showLineart ? {
-                                                filter: 'grayscale(1) contrast(1.8) brightness(1.2) invert(0)',
-                                                opacity: 0.85
-                                            } : {}}
-                                        />
+                                        {(i.customImage || i.product.image) ? (
+                                            <img
+                                                src={i.customImage || i.product.image}
+                                                className="w-24 h-24 print:w-14 print:h-14 object-contain transition-all duration-300"
+                                                alt={i.customName || i.product.name}
+                                                style={i.showLineart ? {
+                                                    filter: 'grayscale(1) contrast(1.8) brightness(1.2) invert(0)',
+                                                    opacity: 0.85
+                                                } : {}}
+                                            />
+                                        ) : (
+                                            <div className="w-24 h-24 print:w-14 print:h-14 flex flex-col items-center justify-center bg-slate-100 rounded-lg border border-dashed border-slate-300">
+                                                <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                                <span className="text-[8px] text-slate-400 font-bold mt-1">No Image</span>
+                                            </div>
+                                        )}
                                         <span className="text-[10px] print:text-[8px] font-black text-slate-900 uppercase tracking-tight">{i.customModelNumber || i.product.modelNumber}</span>
                                         {(isCustomerView || i.isCustom) && <span className="text-[11px] font-bold text-slate-700">{i.customName || i.product.name}</span>}
                                     </div>
@@ -486,15 +493,22 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             <div className="flex p-4 gap-4">
                                 {/* Image */}
                                 <div className="w-21 h-24 flex-shrink-0 bg-slate-50 rounded-lg flex items-center justify-center p-4 border overflow-hidden">
-                                    <img
-                                        src={i.product.image}
-                                        className="w-full h-full object-contain transition-all duration-300"
-                                        alt={i.product.name}
-                                        style={i.showLineart ? {
-                                            filter: 'grayscale(1) contrast(1.8) brightness(1.2) invert(0)',
-                                            opacity: 0.85
-                                        } : {}}
-                                    />
+                                    {(i.customImage || i.product.image) ? (
+                                        <img
+                                            src={i.customImage || i.product.image}
+                                            className="w-full h-full object-contain transition-all duration-300"
+                                            alt={i.product.name}
+                                            style={i.showLineart ? {
+                                                filter: 'grayscale(1) contrast(1.8) brightness(1.2) invert(0)',
+                                                opacity: 0.85
+                                            } : {}}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex flex-col items-center justify-center">
+                                            <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                            <span className="text-[8px] text-slate-400 font-bold mt-1">No Image</span>
+                                        </div>
+                                    )}
                                 </div>
                                 {/* Header Info */}
                                 <div className="flex-1 min-w-0">
