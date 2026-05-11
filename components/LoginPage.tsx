@@ -5,6 +5,7 @@ const USERS: { name: string; password: string; role: string }[] = [
     { name: 'Admin', password: 'magnific@admin', role: 'admin' },
     { name: 'Alifiya', password: 'alifiya@123', role: 'sales' },
     { name: 'Sharmila', password: 'sharmila@123', role: 'sales' },
+    { name: 'Kiran', password: 'Kiran@123', role: 'sales' },
 ];
 
 interface LoginPageProps {
