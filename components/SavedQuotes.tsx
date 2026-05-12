@@ -6,12 +6,13 @@ import { useNavigate } from 'react-router-dom';
 interface SavedQuotesProps {
     savedQuotes: Quotation[];
     currentUser: string;
+    isLoading?: boolean;
     onLoad: (q: Quotation) => void;
     onEdit: (q: Quotation) => void;
     onDelete: (e: React.MouseEvent, id: string) => void;
 }
 
-export default function SavedQuotes({ savedQuotes, currentUser, onLoad, onEdit, onDelete }: SavedQuotesProps) {
+export default function SavedQuotes({ savedQuotes, currentUser, isLoading, onLoad, onEdit, onDelete }: SavedQuotesProps) {
     const navigate = useNavigate();
 
     // Check if the current user can edit a quote (only their own quotes)
@@ -36,9 +37,19 @@ export default function SavedQuotes({ savedQuotes, currentUser, onLoad, onEdit, 
                     <BackIcon /> <span className="ml-1">Home</span>
                 </button>
             </div>
-            {savedQuotes.length === 0 ? (
+            {isLoading ? (
                 <div className="bg-white rounded-xl p-16 text-center shadow-sm border border-slate-200">
-                    <p className="text-slate-400 font-medium italic">No quotations found in local history.</p>
+                    <div className="inline-flex items-center space-x-3">
+                        <svg className="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        <span className="text-slate-500 font-medium">Loading quotations...</span>
+                    </div>
+                </div>
+            ) : savedQuotes.length === 0 ? (
+                <div className="bg-white rounded-xl p-16 text-center shadow-sm border border-slate-200">
+                    <p className="text-slate-400 font-medium italic">No quotations saved yet.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

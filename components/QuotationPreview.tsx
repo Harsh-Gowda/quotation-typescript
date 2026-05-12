@@ -8,6 +8,7 @@ interface QuotationPreviewProps {
     finalQuote: Quotation;
     subtotal: number;
     isSaved: boolean;
+    isSaving?: boolean;
     onSave: () => void;
     onExportExcel: () => void;
     onEdit: () => void;
@@ -22,7 +23,7 @@ interface QuotationPreviewProps {
 }
 
 export default function QuotationPreview({
-    finalQuote, subtotal, isSaved, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onNewQuote,
+    finalQuote, subtotal, isSaved, isSaving, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onNewQuote,
     isPublicMode, isCustomerView, viewOnly
 }: QuotationPreviewProps) {
     const navigate = useNavigate();
@@ -71,8 +72,16 @@ export default function QuotationPreview({
                                         </div>
                                     </div>
                                 </div>
-                                <button onClick={onSave} disabled={isSaved} className={`flex items-center px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-sm ${isSaved ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'}`}>
-                                    {isSaved ? <CheckIcon /> : <SaveIcon />} {isSaved ? 'Saved' : 'Save Quote'}
+                                <button onClick={onSave} disabled={isSaved || isSaving} className={`flex items-center px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-sm ${isSaved ? 'bg-green-50 text-green-600 border border-green-200' : isSaving ? 'bg-indigo-50 text-indigo-400 border border-indigo-200 cursor-wait' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'}`}>
+                                    {isSaving ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                            </svg>
+                                            Saving...
+                                        </>
+                                    ) : isSaved ? <><CheckIcon /> Saved</> : <><SaveIcon /> Save Quote</>}
                                 </button>
                                 <button onClick={() => {
                                     const originalTitle = document.title;

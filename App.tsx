@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Customer, Product, QuoteItem, Quotation } from './types';
-import { STORAGE_KEY, DRAFT_STORAGE_KEY } from './constants';
+import { DRAFT_STORAGE_KEY } from './constants';
 import * as XLSX from 'xlsx';
 import { totalPrice, computeGstBase, calculateTotalDiscount } from './utils';
 import { HistoryIcon } from './components/Icons';
 import { supabase } from './services/supabase';
+import { fetchQuotations, saveQuotation, deleteQuotation } from './services/quotationService';
 
 // Components
 import CustomerEntry from './components/CustomerEntry';
@@ -70,8 +71,10 @@ export default function App() {
   const [finalQuote, setFinalQuote] = useState<Quotation | null>(null);
   const [savedQuotes, setSavedQuotes] = useState<Quotation[]>([]);
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingQuotes, setIsLoadingQuotes] = useState(true);
 
   const [isCustomerView, setIsCustomerView] = useState(false);
   const [isPublicMode, setIsPublicMode] = useState(false);
@@ -89,12 +92,22 @@ export default function App() {
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
 
-  useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try { setSavedQuotes(JSON.parse(raw)); } catch (e) { console.error(e); }
+  // Load saved quotations from Supabase on mount
+  const loadQuotations = useCallback(async () => {
+    setIsLoadingQuotes(true);
+    try {
+      const quotes = await fetchQuotations();
+      setSavedQuotes(quotes);
+    } catch (e) {
+      console.error('Failed to load quotations from Supabase:', e);
+    } finally {
+      setIsLoadingQuotes(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadQuotations();
+  }, [loadQuotations]);
 
   // Save draft to localStorage
   useEffect(() => {
@@ -423,6 +436,7 @@ export default function App() {
   };
 
   // Generate quotation ID in format: ALI-260509-1 (NAME-YYMMDD-DAILY_COUNT)
+  // Uses savedQuotes from Supabase to determine daily counter (avoids localStorage dependency)
   const generateQuotationId = (): string => {
     const userName = loggedInUser?.name || 'USR';
     const prefix = userName.substring(0, 3).toUpperCase();
@@ -433,11 +447,16 @@ export default function App() {
     const dd = String(now.getDate()).padStart(2, '0');
     const dateStr = `${yy}${mm}${dd}`;
 
-    // Daily counter stored in localStorage, resets each day per user prefix
-    const counterKey = `magnific_quote_counter_${prefix}_${dateStr}`;
-    const stored = localStorage.getItem(counterKey);
-    let counter = stored ? parseInt(stored, 10) + 1 : 1;
-    localStorage.setItem(counterKey, String(counter));
+    // Count existing quotes with same prefix-date pattern from Supabase data
+    const todayPrefix = `${prefix}-${dateStr}-`;
+    const todayQuotes = savedQuotes.filter(q => q.id.startsWith(todayPrefix));
+    let maxCounter = 0;
+    todayQuotes.forEach(q => {
+      const parts = q.id.split('-');
+      const num = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(num) && num > maxCounter) maxCounter = num;
+    });
+    const counter = maxCounter + 1;
 
     return `${prefix}-${dateStr}-${counter}`;
   };
@@ -526,38 +545,53 @@ export default function App() {
     setIsSaved(false);
   };
 
-  const saveToLocal = () => {
-    if (!finalQuote) return;
+  const saveToSupabase = async () => {
+    if (!finalQuote || isSaving) return;
+    setIsSaving(true);
 
-    let newList: Quotation[];
-    if (isEditMode && editingQuoteId) {
-      // Update existing quotation
-      newList = savedQuotes.map(q => q.id === editingQuoteId ? finalQuote : q);
-    } else {
-      // Add new quotation
-      newList = [finalQuote, ...savedQuotes];
+    try {
+      await saveQuotation(finalQuote);
+
+      // Update local state optimistically
+      let newList: Quotation[];
+      if (isEditMode && editingQuoteId) {
+        newList = savedQuotes.map(q => q.id === editingQuoteId ? finalQuote : q);
+      } else {
+        newList = [finalQuote, ...savedQuotes];
+      }
+      setSavedQuotes(newList);
+      setIsSaved(true);
+
+      // Reset edit mode and clear draft
+      setIsEditMode(false);
+      setEditingQuoteId(null);
+      resetDraft();
+
+      // Auto-print after saving
+      setTimeout(() => {
+        window.print();
+      }, 300);
+    } catch (err) {
+      console.error('Failed to save quotation:', err);
+      alert('Failed to save quotation. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
-
-    setSavedQuotes(newList);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
-    setIsSaved(true);
-
-    // Reset edit mode and clear draft
-    setIsEditMode(false);
-    setEditingQuoteId(null);
-    resetDraft();
-
-    // Auto-print after saving
-    setTimeout(() => {
-      window.print();
-    }, 300);
   };
 
-  const deleteSaved = (e: React.MouseEvent, id: string) => {
+  const deleteSaved = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    // Optimistic removal from UI
     const newList = savedQuotes.filter(q => q.id !== id);
     setSavedQuotes(newList);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
+
+    try {
+      await deleteQuotation(id);
+    } catch (err) {
+      console.error('Failed to delete quotation:', err);
+      // Revert on failure
+      await loadQuotations();
+    }
   };
 
   const handleExportExcel = () => {
@@ -707,7 +741,7 @@ export default function App() {
               </button>
               {location.pathname === '/preview' && (
                 <div className="text-xs font-bold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">
-                  {isSaved ? 'Saved Locally' : 'Unsaved Draft'}
+                  {isSaved ? '✓ Saved' : 'Unsaved Draft'}
                 </div>
               )}
               {loggedInUser && (
@@ -773,7 +807,8 @@ export default function App() {
                 finalQuote={finalQuote}
                 subtotal={totalPrice(finalQuote.items)}
                 isSaved={isSaved}
-                onSave={saveToLocal}
+                isSaving={isSaving}
+                onSave={saveToSupabase}
                 onExportExcel={handleExportExcel}
                 onEdit={handleEditQuotation}
                 onUpdateCustomer={handleUpdateCustomer}
@@ -806,6 +841,7 @@ export default function App() {
             <SavedQuotes
               savedQuotes={savedQuotes}
               currentUser={loggedInUser?.name || ''}
+              isLoading={isLoadingQuotes}
               onLoad={(q) => {
                 setFinalQuote(q);
                 setCustomer(q.customer);
