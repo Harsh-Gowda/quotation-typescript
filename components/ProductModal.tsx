@@ -80,11 +80,30 @@ interface ProductModalProps {
         const [quantity, setQuantity] = useState<number>(initialValues?.quantity || 1);
         const [customImage, setCustomImage] = useState<string>(initialValues?.customImage || product.image || '');
         const [savePermanently, setSavePermanently] = useState(false);
+        const [dbCategories, setDbCategories] = useState<any[]>([]);
+        const [selectedDbCategoryId, setSelectedDbCategoryId] = useState<string>('');
         const [isSavingProduct, setIsSavingProduct] = useState(false);
         const [isUploading, setIsUploading] = useState(false);
         const [uploadError, setUploadError] = useState('');
         const [uploadSuccess, setUploadSuccess] = useState(false);
         const fileInputRef = useRef<HTMLInputElement>(null);
+
+        React.useEffect(() => {
+            if (savePermanently && dbCategories.length === 0) {
+                supabase.from('product_categories').select('*').then(({ data }) => {
+                    if (data) {
+                        setDbCategories(data);
+                        if (customCategory === 'Fan') {
+                            const fanCat = data.find(c => c.code === 'FAN' || c.name === 'Fans');
+                            if (fanCat) setSelectedDbCategoryId(fanCat.categoryId);
+                        } else {
+                            const uncategorized = data.find(c => c.code === 'CAT_UNCATEGORIZED');
+                            if (uncategorized) setSelectedDbCategoryId(uncategorized.categoryId);
+                        }
+                    }
+                });
+            }
+        }, [savePermanently]);
 
         const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             const file = e.target.files?.[0];
@@ -117,29 +136,32 @@ interface ProductModalProps {
                 const publicUrl = urlData.publicUrl;
 
                 // 3. Update product_variants attributes.media.primaryImage in DB
-                // First fetch existing attributes
-                const { data: variantData, error: fetchErr } = await supabase
-                    .from('product_variants')
-                    .select('attributes')
-                    .eq('variantId', product.id)
-                    .single();
-
-                if (!fetchErr && variantData) {
-                    const existingAttrs = variantData.attributes || {};
-                    const updatedAttrs = {
-                        ...existingAttrs,
-                        media: {
-                            ...(existingAttrs.media || {}),
-                            primaryImage: publicUrl,
-                            images: [publicUrl, ...(existingAttrs.media?.images || []).filter((img: string) => img !== publicUrl)]
-                        }
-                    };
-
-                    await supabase
+                // Skip if it's a service (like fan-installation) or a custom item
+                if (product.id !== 'custom-item' && product.category !== 'Services' && product.id !== 'fan-installation') {
+                    // First fetch existing attributes
+                    const { data: variantData, error: fetchErr } = await supabase
                         .from('product_variants')
-                        .update({ attributes: updatedAttrs })
-                        .eq('variantId', product.id);
-                } else if (isCustom) {
+                        .select('attributes')
+                        .eq('variantId', product.id)
+                        .single();
+
+                    if (!fetchErr && variantData) {
+                        const existingAttrs = variantData.attributes || {};
+                        const updatedAttrs = {
+                            ...existingAttrs,
+                            media: {
+                                ...(existingAttrs.media || {}),
+                                primaryImage: publicUrl,
+                                images: [publicUrl, ...(existingAttrs.media?.images || []).filter((img: string) => img !== publicUrl)]
+                            }
+                        };
+
+                        await supabase
+                            .from('product_variants')
+                            .update({ attributes: updatedAttrs })
+                            .eq('variantId', product.id);
+                    }
+                } else if (isCustom || product.category === 'Services') {
                     // For custom items not yet in DB, we just keep the URL in state
                     // and it will be saved to the QuoteItem or permanently if "savePermanently" is checked
                 }
@@ -167,12 +189,7 @@ interface ProductModalProps {
                 try {
                     const newTemplateId = crypto.randomUUID();
                     const newVariantId = crypto.randomUUID();
-                    const categoryIdMap: any = {
-                        'Fan': '866f5646-5cd8-41e3-814c-8caf9d5c1974', // Fans
-                        'Light': 'cca299b3-c011-44d8-957a-e67a1df172a9', // Uncategorized
-                        'Other': 'cca299b3-c011-44d8-957a-e67a1df172a9'
-                    };
-                    const targetCategoryId = categoryIdMap[customCategory || 'Other'];
+                    const targetCategoryId = selectedDbCategoryId || 'cca299b3-c011-44d8-957a-e67a1df172a9';
 
                     // Insert template
                     const { error: tErr } = await supabase.from('product_templates').insert({
@@ -469,6 +486,22 @@ interface ProductModalProps {
                                         <p className="text-xs text-indigo-700 mt-0.5">
                                             If checked, this item will be added to the product database so you can find it in future quotations.
                                         </p>
+                                        
+                                        {savePermanently && dbCategories.length > 0 && (
+                                            <div className="mt-3">
+                                                <label className="text-[10px] font-bold text-indigo-800 uppercase tracking-wider block mb-1">Select Database Category</label>
+                                                <select 
+                                                    className="w-full p-2 border border-indigo-200 rounded-lg bg-white text-indigo-900 font-medium text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    value={selectedDbCategoryId}
+                                                    onChange={(e) => setSelectedDbCategoryId(e.target.value)}
+                                                >
+                                                    <option value="" disabled>Select a category...</option>
+                                                    {dbCategories.map(c => (
+                                                        <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
