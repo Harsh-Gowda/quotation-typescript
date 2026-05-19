@@ -78,8 +78,9 @@ interface ProductModalProps {
         const [extraNote, setExtraNote] = useState(initialValues?.extraNote || '');
         const [customPrice, setCustomPrice] = useState<string>(initialValues?.customPrice !== undefined ? String(initialValues.customPrice) : '');
         const [quantity, setQuantity] = useState<number>(initialValues?.quantity || 1);
-        // customImage stores either a local blob URL (during upload) or the final Supabase public URL
         const [customImage, setCustomImage] = useState<string>(initialValues?.customImage || product.image || '');
+        const [savePermanently, setSavePermanently] = useState(false);
+        const [isSavingProduct, setIsSavingProduct] = useState(false);
         const [isUploading, setIsUploading] = useState(false);
         const [uploadError, setUploadError] = useState('');
         const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -99,7 +100,8 @@ interface ProductModalProps {
             try {
                 // 1. Upload file to Supabase Storage
                 const ext = file.name.split('.').pop() || 'jpg';
-                const storagePath = `products/${product.id}.${ext}`;
+                const fileId = product.id === 'custom-item' ? crypto.randomUUID() : product.id;
+                const storagePath = `products/${fileId}.${ext}`;
 
                 const { error: uploadErr } = await supabase.storage
                     .from('product-images')
@@ -137,6 +139,9 @@ interface ProductModalProps {
                         .from('product_variants')
                         .update({ attributes: updatedAttrs })
                         .eq('variantId', product.id);
+                } else if (isCustom) {
+                    // For custom items not yet in DB, we just keep the URL in state
+                    // and it will be saved to the QuoteItem or permanently if "savePermanently" is checked
                 }
 
                 // 4. Swap local blob URL for permanent public URL
@@ -156,7 +161,61 @@ interface ProductModalProps {
         const displayImage = customImage || product.image;
         const isMissingImage = !product.image && !customImage;
 
-        const handleAdd = () => {
+        const handleAdd = async () => {
+            if (isCustom && savePermanently) {
+                setIsSavingProduct(true);
+                try {
+                    const newTemplateId = crypto.randomUUID();
+                    const newVariantId = crypto.randomUUID();
+                    const categoryIdMap: any = {
+                        'Fan': '866f5646-5cd8-41e3-814c-8caf9d5c1974', // Fans
+                        'Light': 'cca299b3-c011-44d8-957a-e67a1df172a9', // Uncategorized
+                        'Other': 'cca299b3-c011-44d8-957a-e67a1df172a9'
+                    };
+                    const targetCategoryId = categoryIdMap[customCategory || 'Other'];
+
+                    // Insert template
+                    const { error: tErr } = await supabase.from('product_templates').insert({
+                        templateId: newTemplateId,
+                        skuFamily: modelNumber || `CUSTOM-${Date.now()}`,
+                        name: name,
+                        brand: 'Custom',
+                        categoryId: targetCategoryId,
+                        description: description,
+                        isConfigurable: false,
+                        updatedAt: new Date().toISOString()
+                    });
+                    if (tErr) throw new Error("Template: " + tErr.message);
+
+                    // Insert variant
+                    const techDetails: any = { ...customFields };
+                    const { error: vErr } = await supabase.from('product_variants').insert({
+                        variantId: newVariantId,
+                        templateId: newTemplateId,
+                        sku: modelNumber || `CUSTOM-${Date.now()}`,
+                        variantName: name,
+                        catalogPrice: Number(customPrice || 0),
+                        showroomPrice: Number(customPrice || 0),
+                        attributes: {
+                            media: customImage ? { primaryImage: customImage, images: [customImage] } : {},
+                            technicalDetails: techDetails
+                        },
+                        isSellable: true,
+                        isStockTracked: false,
+                        updatedAt: new Date().toISOString()
+                    });
+                    if (vErr) throw new Error("Variant: " + vErr.message);
+
+                    // Notify parent to refresh products
+                    onImageSaved?.(newVariantId, customImage || '');
+                    alert("Product saved permanently to catalog!");
+                } catch (err: any) {
+                    alert("Failed to save product permanently: " + err.message);
+                } finally {
+                    setIsSavingProduct(false);
+                }
+            }
+
             const addOptions: any = {
                 placeName: place,
                 customDescription: description,
@@ -392,6 +451,28 @@ interface ProductModalProps {
                                 </div>
                             )}
 
+                            {isCustom && product.id === 'custom-item' && (
+                                <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-start space-x-3">
+                                    <div className="pt-0.5">
+                                        <input 
+                                            type="checkbox" 
+                                            id="savePermanently" 
+                                            checked={savePermanently} 
+                                            onChange={(e) => setSavePermanently(e.target.checked)}
+                                            className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="savePermanently" className="text-sm font-bold text-indigo-900 cursor-pointer block">
+                                            Save permanently to catalog
+                                        </label>
+                                        <p className="text-xs text-indigo-700 mt-0.5">
+                                            If checked, this item will be added to the product database so you can find it in future quotations.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Price Override for Services or Custom Items */}
                             {(product.category === 'Services' || isCustom) && (
                                 <div className="space-y-1.5">
@@ -468,9 +549,10 @@ interface ProductModalProps {
                             </div>
                             <button
                                 onClick={handleAdd}
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center"
+                                disabled={isSavingProduct}
+                                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center"
                             >
-                                {initialValues ? <EditIcon /> : <CartIcon />} <span className="ml-2">{initialValues ? 'Update Item' : 'Add to Quotation'}</span>
+                                {initialValues ? <EditIcon /> : <CartIcon />} <span className="ml-2">{isSavingProduct ? 'Saving...' : (initialValues ? 'Update Item' : 'Add to Quotation')}</span>
                             </button>
                         </div>
                     </div>
