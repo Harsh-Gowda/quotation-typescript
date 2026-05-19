@@ -20,6 +20,8 @@ interface ProductModalProps {
         customModelNumber?: string,
         customImage?: string,
         isCustom?: boolean,
+        customCategory?: string,
+        customFields?: Record<string, string>,
         quantity?: number
     }) => void;
     initialValues?: any;
@@ -46,7 +48,33 @@ interface ProductModalProps {
             product.lightOption && `Light: ${product.lightOption}`
         ].filter(Boolean).join('\n');
 
+        const [customCategory, setCustomCategory] = useState<'Fan' | 'Light' | 'Other' | null>(
+            initialValues?.customCategory || (isCustom && product.id !== 'fan-installation' ? null : 'Other')
+        );
+        const [customFields, setCustomFields] = useState<Record<string, string>>(initialValues?.customFields || {});
         const [description, setDescription] = useState(defaultDescription);
+
+        React.useEffect(() => {
+            if (isCustom && (customCategory === 'Fan' || customCategory === 'Light')) {
+                const parts: string[] = [];
+                if (customCategory === 'Fan') {
+                    if (customFields.sweep) parts.push(`Sweep: ${customFields.sweep}`);
+                    if (customFields.motorSpec) parts.push(`Motor: ${customFields.motorSpec}`);
+                    if (customFields.noOfBlades) parts.push(`Blades: ${customFields.noOfBlades}`);
+                    if (customFields.bodyColor) parts.push(`Color: ${customFields.bodyColor}`);
+                    if (customFields.bladeFinish) parts.push(`Blade Finish: ${customFields.bladeFinish}`);
+                    if (customFields.lightOption) parts.push(`Light: ${customFields.lightOption}`);
+                    if (customFields.heightOfFan) parts.push(`Height: ${customFields.heightOfFan}`);
+                    if (customFields.airflow) parts.push(`Airflow: ${customFields.airflow}`);
+                } else if (customCategory === 'Light') {
+                    if (customFields.size) parts.push(`Size: ${customFields.size}`);
+                    if (customFields.lamp) parts.push(`Lamp: ${customFields.lamp}`);
+                    if (customFields.finishing) parts.push(`Finish: ${customFields.finishing}`);
+                    if (customFields.suitablePlace) parts.push(`Suitable Place: ${customFields.suitablePlace}`);
+                }
+                setDescription(parts.join('\n'));
+            }
+        }, [customFields, customCategory, isCustom]);
         const [extraNote, setExtraNote] = useState(initialValues?.extraNote || '');
         const [customPrice, setCustomPrice] = useState<string>(initialValues?.customPrice !== undefined ? String(initialValues.customPrice) : '');
         const [quantity, setQuantity] = useState<number>(initialValues?.quantity || 1);
@@ -139,6 +167,8 @@ interface ProductModalProps {
             if (isCustom) {
                 addOptions.customName = name;
                 addOptions.customModelNumber = modelNumber;
+                addOptions.customCategory = customCategory;
+                addOptions.customFields = customFields;
             }
             if ((product.category === 'Services' || isCustom) && customPrice !== '') {
                 addOptions.customPrice = Number(customPrice);
@@ -148,6 +178,44 @@ interface ProductModalProps {
             }
             onAdd(addOptions);
         };
+
+        if (isCustom && customCategory === null && product.id !== 'fan-installation') {
+            return (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-slate-900">What are you adding?</h2>
+                            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                            <button onClick={() => setCustomCategory('Fan')} className="p-4 border-2 border-slate-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 flex items-center space-x-4 transition-all text-left">
+                                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-2xl flex-shrink-0">🪄</div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900">Custom Fan</h3>
+                                    <p className="text-xs text-slate-500">Add a fan with specific sweep, motor, and blade details</p>
+                                </div>
+                            </button>
+                            <button onClick={() => setCustomCategory('Light')} className="p-4 border-2 border-slate-200 rounded-xl hover:border-amber-500 hover:bg-amber-50 flex items-center space-x-4 transition-all text-left">
+                                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-2xl flex-shrink-0">💡</div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900">Custom Light</h3>
+                                    <p className="text-xs text-slate-500">Add a light with specific size, lamp, and finish details</p>
+                                </div>
+                            </button>
+                            <button onClick={() => setCustomCategory('Other')} className="p-4 border-2 border-slate-200 rounded-xl hover:border-slate-500 hover:bg-slate-50 flex items-center space-x-4 transition-all text-left">
+                                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 text-2xl flex-shrink-0">📦</div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900">Other Product</h3>
+                                    <p className="text-xs text-slate-500">Add a generic item with a custom description</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
         return (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -227,7 +295,9 @@ interface ProductModalProps {
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <div className="flex items-center space-x-2">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{isCustom ? 'Custom Item' : product.category}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        {isCustom ? (customCategory === 'Fan' ? 'Custom Fan' : customCategory === 'Light' ? 'Custom Light' : 'Custom Item') : product.category}
+                                    </span>
                                     {!isCustom && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono font-bold">{product.modelNumber}</span>}
                                 </div>
                                 {isCustom ? (
@@ -261,7 +331,55 @@ interface ProductModalProps {
                                 </div>
                             )}
 
-                            {product.id !== 'fan-installation' && (
+                            {isCustom && customCategory === 'Fan' && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { key: 'sweep', label: 'Sweep' },
+                                        { key: 'motorSpec', label: 'Motor Spec' },
+                                        { key: 'noOfBlades', label: 'No. of Blades' },
+                                        { key: 'bodyColor', label: 'Body Color' },
+                                        { key: 'bladeFinish', label: 'Blade Finish' },
+                                        { key: 'lightOption', label: 'Light Option' },
+                                        { key: 'heightOfFan', label: 'Height of Fan' },
+                                        { key: 'airflow', label: 'Airflow' }
+                                    ].map(field => (
+                                        <div key={field.key} className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{field.label}</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-700 font-medium text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                                                value={customFields[field.key] || ''}
+                                                onChange={e => setCustomFields(prev => ({ ...prev, [field.key]: e.target.value }))}
+                                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {isCustom && customCategory === 'Light' && (
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { key: 'size', label: 'Size' },
+                                        { key: 'lamp', label: 'Lamp' },
+                                        { key: 'finishing', label: 'Finishing' },
+                                        { key: 'suitablePlace', label: 'Suitable Place' }
+                                    ].map(field => (
+                                        <div key={field.key} className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{field.label}</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border border-slate-200 rounded-lg bg-white text-slate-700 font-medium text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                                                value={customFields[field.key] || ''}
+                                                onChange={e => setCustomFields(prev => ({ ...prev, [field.key]: e.target.value }))}
+                                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {((isCustom && customCategory === 'Other') || (!isCustom && product.id !== 'fan-installation')) && (
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{isCustom ? 'Description' : 'Technical Details / Description'}</label>
                                     <textarea
@@ -269,7 +387,7 @@ interface ProductModalProps {
                                         className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-slate-700 font-medium text-sm whitespace-pre-wrap outline-none resize-none focus:ring-2 focus:ring-indigo-500 transition-all"
                                         value={description}
                                         onChange={e => setDescription(e.target.value)}
-                                        placeholder="Add details for this custom item..."
+                                        placeholder={isCustom ? "Add details for this custom item..." : ""}
                                     />
                                 </div>
                             )}

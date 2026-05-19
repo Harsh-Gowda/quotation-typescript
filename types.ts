@@ -54,6 +54,8 @@ export interface QuoteItem {
   customModelNumber?: string;
   customImage?: string;
   isCustom?: boolean;
+  customCategory?: string;
+  customFields?: Record<string, string>;
   showLineart?: boolean;
   includeGst?: boolean;
   includeDiscount?: boolean;

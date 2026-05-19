@@ -429,6 +429,11 @@ export default function App() {
         extraNote: options.extraNote,
         discount: options.discount,
         customImage: options.customImage !== undefined ? options.customImage : oldItem.customImage,
+        customCategory: options.customCategory !== undefined ? options.customCategory : oldItem.customCategory,
+        customFields: options.customFields !== undefined ? options.customFields : oldItem.customFields,
+        customName: options.customName !== undefined ? options.customName : oldItem.customName,
+        customModelNumber: options.customModelNumber !== undefined ? options.customModelNumber : oldItem.customModelNumber,
+        customPrice: options.customPrice !== undefined ? options.customPrice : oldItem.customPrice,
       };
       newCart[index] = newItem;
       return newCart;
