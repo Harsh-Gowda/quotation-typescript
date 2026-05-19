@@ -119,7 +119,7 @@ interface ProductModalProps {
             try {
                 // 1. Upload file to Supabase Storage
                 const ext = file.name.split('.').pop() || 'jpg';
-                const fileId = product.id === 'custom-item' ? crypto.randomUUID() : product.id;
+                const fileId = (product.id === 'custom-item' || product.category === 'Services' || product.id === 'fan-installation') ? crypto.randomUUID() : product.id;
                 const storagePath = `products/${fileId}.${ext}`;
 
                 const { error: uploadErr } = await supabase.storage

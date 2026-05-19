@@ -68,10 +68,10 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             <img src="/images/magnific-web.png" alt="website logo" className="w-[100px] font-black text-indigo-600 tracking-tighter italic mb-4" />
                             <div className="flex items-center space-x-2 mt-[-4px]">
 
-                                <div className="h-[1px] bg-slate-400 flex-1"></div>
+
 
                                 <span className="text-[7px] font-bold text-slate-500 uppercase tracking-[0.2em] whitespace-nowrap">Designer Fans — Luxury Premium Lighting</span>
-                                <div className="h-[1px] bg-slate-400 flex-1"></div>
+
                             </div>
                         </div>
                         <div className="text-[9px] text-slate-800 font-medium leading-tight">
