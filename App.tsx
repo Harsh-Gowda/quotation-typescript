@@ -439,7 +439,7 @@ export default function App() {
   // Uses savedQuotes from Supabase to determine daily counter (avoids localStorage dependency)
   const generateQuotationId = (): string => {
     const userName = loggedInUser?.name || 'USR';
-    const prefix = userName.substring(0, 3).toUpperCase();
+    const prefix = 'M' + userName.substring(0, 2).toUpperCase();
 
     const now = new Date();
     const yy = String(now.getFullYear()).slice(-2);

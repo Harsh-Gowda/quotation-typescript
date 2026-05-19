@@ -42,7 +42,8 @@ export default function QuotationPreview({
                             <div className="flex space-x-3">
                                 <button onClick={() => {
                                     const originalTitle = document.title;
-                                    document.title = '\u200b';
+                                    const cName = finalQuote.customer.name.replace(/\s+/g, '_');
+                                    document.title = `Magnific_Quotation_${cName}_${finalQuote.id}`;
                                     window.print();
                                     document.title = originalTitle;
                                 }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm">
@@ -85,7 +86,8 @@ export default function QuotationPreview({
                                 </button>
                                 <button onClick={() => {
                                     const originalTitle = document.title;
-                                    document.title = '\u200b'; // Zero-width space to hide title
+                                    const cName = finalQuote.customer.name.replace(/\s+/g, '_');
+                                    document.title = `Magnific_Quotation_${cName}_${finalQuote.id}`;
                                     window.print();
                                     document.title = originalTitle;
                                 }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm">
