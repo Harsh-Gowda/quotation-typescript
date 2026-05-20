@@ -36,7 +36,7 @@ export const computeGstBase = (items: QuoteItem[], globalDiscountType?: 'include
 
   return items.reduce((sum, item) => {
     const isService = item.product.category === 'Services';
-    const gstApplies = isService || item.includeGst !== false;
+    const gstApplies =  item.includeGst !== false;
     if (!gstApplies) return sum;
 
     const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
