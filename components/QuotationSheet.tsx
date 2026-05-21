@@ -440,7 +440,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{quote.advanceAmount.toLocaleString('en-IN')}</td>
                                         </tr>
                                         <tr>
-                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Amount Paid</td>
+                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Total Amount</td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                                 ₹{(() => {
                                                     const totalNoTax = totalPrice(quote.items);
@@ -616,7 +616,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         <span className="font-bold">{quote.advanceAmount.toLocaleString('en-IN')}</span>
                                     </div>
                                     <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
-                                        <span className="font-bold uppercase tracking-wider">Amount Paid</span>
+                                        <span className="font-bold uppercase tracking-wider">Total Amount</span>
                                         <span className="font-bold text-green-400">
                                             ₹{(() => {
                                                 const totalNoTax = totalPrice(quote.items);
