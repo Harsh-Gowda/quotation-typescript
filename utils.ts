@@ -44,7 +44,7 @@ export const computeGstBase = (items: QuoteItem[], globalDiscountType?: 'include
     const isExclude = globalDiscountType === 'exclude';
 
     let effectivePrice = item.includeGst !== false ? basePrice : basePrice / 1.18;
-    if (isExclude && item.includeDiscount !== false) {
+    if (isExclude && !isService && item.includeDiscount !== false) {
       effectivePrice = effectivePrice * (1 - val / 100);
     }
 
