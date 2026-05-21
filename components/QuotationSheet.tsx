@@ -466,7 +466,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     </>
                                 ) : (
                                     <tr>
-                                        <td colSpan={7} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Grand Total</td>
+                                        <td colSpan={7} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Total Amount
+                                        </td>
                                         <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                             ₹{(() => {
                                                 const totalNoTax = totalPrice(quote.items);
