@@ -77,7 +77,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                         <div className="text-[9px] text-slate-800 font-medium leading-tight">
                             <p>No. 42/1, 2nd Floor, I-Towers, 100ft Intermediate Ring Road</p>
                             <p>(Near Royal Oak), Koramangala, Bengaluru - 560047</p>
-                            <p>Tel: +91 80413 27081, +91 78928 27670 E: info@magnific.in</p>
+                            <p>Tel: 9513866001
+                                E: info@magnific.in</p>
                         </div>
                     </div>
                     <div className="text-right text-[10px] font-bold text-slate-900 space-y-0.5">
