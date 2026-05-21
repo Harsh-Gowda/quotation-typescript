@@ -440,30 +440,43 @@ export default function App() {
     });
   };
 
-  // Generate quotation ID in format: ALI-260509-1 (NAME-YYMMDD-DAILY_COUNT)
-  // Uses savedQuotes from Supabase to determine daily counter (avoids localStorage dependency)
+  // Generate quotation ID in format: PREFIX-COUNTER-DISCOUNT (e.g. MKI-01-20)
+  // PREFIX is 'M' + uppercase first two letters of user's name (e.g., MKI for Kiran).
+  // COUNTER is a sequential number padded to 2 digits.
+  // DISCOUNT is the current global discount percentage.
+  // Uses savedQuotes from Supabase to determine counter (avoids localStorage dependency)
   const generateQuotationId = (): string => {
     const userName = loggedInUser?.name || 'USR';
     const prefix = 'M' + userName.substring(0, 2).toUpperCase();
 
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const dateStr = `${yy}${mm}${dd}`;
-
-    // Count existing quotes with same prefix-date pattern from Supabase data
-    const todayPrefix = `${prefix}-${dateStr}-`;
-    const todayQuotes = savedQuotes.filter(q => q.id.startsWith(todayPrefix));
+    // Find all saved quotes starting with the user's prefix
+    const userQuotes = savedQuotes.filter(q => q.id.startsWith(`${prefix}-`));
     let maxCounter = 0;
-    todayQuotes.forEach(q => {
+    userQuotes.forEach(q => {
       const parts = q.id.split('-');
-      const num = parseInt(parts[parts.length - 1], 10);
-      if (!isNaN(num) && num > maxCounter) maxCounter = num;
+      if (parts.length === 3) {
+        // parts[0] is prefix (e.g. MKI)
+        // parts[1] is legacy date (e.g. 260519) or new format counter (e.g. 01)
+        // parts[2] is legacy counter (e.g. 1) or new format discount (e.g. 20)
+        
+        // If legacy date (6 characters): the counter is parts[2]
+        if (parts[1].length === 6) {
+          const num = parseInt(parts[2], 10);
+          if (!isNaN(num) && num > maxCounter) maxCounter = num;
+        } 
+        // If new format counter (2 characters): the counter is parts[1]
+        else if (parts[1].length === 2 || parts[1].length === 1) {
+          const num = parseInt(parts[1], 10);
+          if (!isNaN(num) && num > maxCounter) maxCounter = num;
+        }
+      }
     });
-    const counter = maxCounter + 1;
 
-    return `${prefix}-${dateStr}-${counter}`;
+    const counter = maxCounter + 1;
+    const formattedCounter = String(counter).padStart(2, '0');
+    const disc = Math.round(discountValue || 0);
+
+    return `${prefix}-${formattedCounter}-${disc}`;
   };
 
   const handleCreateQuotation = async () => {
@@ -503,6 +516,26 @@ export default function App() {
     // Set edit mode
     setIsEditMode(true);
     setEditingQuoteId(finalQuote.id);
+
+    // Navigate to catalog
+    navigate('/catalog');
+  };
+
+  const handleDuplicateQuotation = (q: Quotation) => {
+    // Load quotation data into active state as a new draft
+    setCustomer({
+      ...q.customer,
+      advanceAmount: q.advanceAmount || 0,
+      advanceDate: q.advanceDate || ''
+    });
+    setCart(q.items);
+    setDiscountType(q.globalDiscountType || null);
+    setDiscountValue(q.globalDiscountValue || 0);
+
+    // Reset edit mode and clear editingQuoteId so it generates a NEW ID on saving
+    setIsEditMode(false);
+    setEditingQuoteId(null);
+    setIsViewOnly(false);
 
     // Navigate to catalog
     navigate('/catalog');
@@ -586,6 +619,11 @@ export default function App() {
 
   const deleteSaved = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    
+    // Confirmation dialog before deleting
+    const confirmed = window.confirm(`Are you sure you want to delete quotation ${id}?`);
+    if (!confirmed) return;
+
     // Optimistic removal from UI
     const newList = savedQuotes.filter(q => q.id !== id);
     setSavedQuotes(newList);
@@ -846,6 +884,7 @@ export default function App() {
             <SavedQuotes
               savedQuotes={savedQuotes}
               currentUser={loggedInUser?.name || ''}
+              currentUserRole={loggedInUser?.role || ''}
               isLoading={isLoadingQuotes}
               onLoad={(q) => {
                 setFinalQuote(q);
@@ -868,6 +907,7 @@ export default function App() {
                 navigate('/catalog');
               }}
               onDelete={deleteSaved}
+              onDuplicate={handleDuplicateQuotation}
             />
           } />
         </Routes>

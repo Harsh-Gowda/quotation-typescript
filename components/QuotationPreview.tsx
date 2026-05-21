@@ -28,6 +28,18 @@ export default function QuotationPreview({
 }: QuotationPreviewProps) {
     const navigate = useNavigate();
 
+    React.useEffect(() => {
+        const originalTitle = document.title;
+        if (finalQuote) {
+            const cName = finalQuote.customer.name.replace(/\s+/g, '_');
+            const phone = finalQuote.customer.phone.replace(/\s+/g, '_');
+            document.title = `${cName}_${phone}_${finalQuote.id}`;
+        }
+        return () => {
+            document.title = originalTitle;
+        };
+    }, [finalQuote]);
+
     return (
         <div className="max-w-[210mm] mx-auto print:max-w-none print:mx-0">
             {/* Action Toolbar */}
@@ -41,11 +53,7 @@ export default function QuotationPreview({
                             </button>
                             <div className="flex space-x-3">
                                 <button onClick={() => {
-                                    const originalTitle = document.title;
-                                    const cName = finalQuote.customer.name.replace(/\s+/g, '_');
-                                    document.title = `Magnific_Quotation_${cName}_${finalQuote.id}`;
                                     window.print();
-                                    document.title = originalTitle;
                                 }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm">
                                     Print PDF
                                 </button>
@@ -73,6 +81,19 @@ export default function QuotationPreview({
                                         </div>
                                     </div>
                                 </div>
+                                <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 shadow-inner">
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Advance Date</span>
+                                        <div className="flex items-center">
+                                            <input 
+                                                type="date" 
+                                                value={finalQuote.advanceDate || ''} 
+                                                onChange={(e) => onUpdateCustomer?.({ advanceDate: e.target.value })}
+                                                className="w-[125px] bg-transparent border-none outline-none text-sm font-bold text-indigo-600 p-0 focus:ring-0"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                                 <button onClick={onSave} disabled={isSaved || isSaving} className={`flex items-center px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-sm ${isSaved ? 'bg-green-50 text-green-600 border border-green-200' : isSaving ? 'bg-indigo-50 text-indigo-400 border border-indigo-200 cursor-wait' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'}`}>
                                     {isSaving ? (
                                         <>
@@ -85,11 +106,7 @@ export default function QuotationPreview({
                                     ) : isSaved ? <><CheckIcon /> Saved</> : <><SaveIcon /> Save Quote</>}
                                 </button>
                                 <button onClick={() => {
-                                    const originalTitle = document.title;
-                                    const cName = finalQuote.customer.name.replace(/\s+/g, '_');
-                                    document.title = `Magnific_Quotation_${cName}_${finalQuote.id}`;
                                     window.print();
-                                    document.title = originalTitle;
                                 }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm">
                                     Print PDF
                                 </button>

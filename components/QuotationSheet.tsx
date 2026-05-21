@@ -9,7 +9,7 @@ interface QuotationSheetProps {
     subtotal: number;
     isCustomerView?: boolean;
     isEditable?: boolean;
-    onUpdateCustomer?: (updates: Partial<Customer>) => void;
+    onUpdateCustomer?: (updates: Partial<Customer & { advanceAmount?: number; advanceDate?: string }>) => void;
     onUpdateItemQuantity?: (index: number, quantity: number) => void;
     onUpdateItemPlace?: (index: number, placeName: string) => void;
     onUpdateItemSetting?: (index: number, key: 'showLineart' | 'includeGst' | 'includeDiscount', value: boolean) => void;
@@ -52,6 +52,15 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
     const cancelEdit = () => {
         setEditingField(null);
         setTempValue('');
+    };
+
+    const formatAdvanceDate = (dateStr?: string) => {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return dateStr;
     };
 
     return (
@@ -437,7 +446,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 {quote.advanceAmount ? (
                                     <>
                                         <tr>
-                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">Advance</td>
+                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">
+                                                Advance{quote.advanceDate ? ` (${formatAdvanceDate(quote.advanceDate)})` : ''}
+                                            </td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{quote.advanceAmount.toLocaleString('en-IN')}</td>
                                         </tr>
                                         <tr>
@@ -603,7 +614,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     </div>
                                     {quote.globalDiscountValue ? (
                                         <div className="flex justify-between text-blue-400">
-                                            <span>discount ({quote.globalDiscountValue}%)</span>
+                                            <span>discount </span>
                                             <span className="font-bold">-{totalDiscountAmount.toLocaleString('en-IN')}</span>
                                         </div>
                                     ) : null}
@@ -631,7 +642,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 </>
                             ) : (
                                 <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
-                                    <span className="font-bold uppercase tracking-wider">Grand Total</span>
+                                    <span className="font-bold uppercase tracking-wider">Total Amount</span>
                                     <span className="font-bold text-green-400">
                                         ₹{(() => {
                                             const totalNoTax = totalPrice(quote.items);
