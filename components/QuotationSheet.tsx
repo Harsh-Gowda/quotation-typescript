@@ -388,7 +388,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         {quote.globalDiscountValue ? (
                                             <tr>
                                                 <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none">
-                                                    discount ({quote.globalDiscountValue}%)
+                                                    discount
                                                 </td>
                                                 <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-blue-600 leading-none">
                                                     - {totalDiscountAmount.toLocaleString('en-IN')}
@@ -423,7 +423,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         {quote.globalDiscountValue ? (
                                             <tr>
                                                 <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none">
-                                                    discount ({quote.globalDiscountValue}%)
+                                                    discount
                                                 </td>
                                                 <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-blue-600 leading-none">
                                                     - {totalDiscountAmount.toLocaleString('en-IN')}
@@ -594,7 +594,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 <>
                                     {quote.globalDiscountValue ? (
                                         <div className="flex justify-between text-blue-400">
-                                            <span>discount ({quote.globalDiscountValue}%)</span>
+                                            <span>discount</span>
                                             <span className="font-bold">-{totalDiscountAmount.toLocaleString('en-IN')}</span>
                                         </div>
                                     ) : null}

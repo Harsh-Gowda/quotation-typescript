@@ -57,8 +57,9 @@ export const calculateTotalDiscount = (items: QuoteItem[], globalDiscountType?: 
   if (val <= 0) return 0;
 
   if (globalDiscountType === 'exclude') {
+    // Discount applies to ALL items (including Services) — matches: total - discount% + GST%
     return items.reduce((sum, item) => {
-      if (item.product.category === 'Services' || item.includeDiscount === false) return sum;
+      if (item.includeDiscount === false) return sum;
       const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
       const effectivePrice = item.includeGst !== false ? basePrice : basePrice / 1.18;
       const itemDiscount = Math.round(effectivePrice * val / 100);
