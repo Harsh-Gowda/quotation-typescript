@@ -286,7 +286,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
                                             const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
                                             const gDiscount = quote.globalDiscountValue || 0;
-                                            const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
+                                            const appliesDisc = quote.globalDiscountType === 'exclude'
+                                                ? (i.includeDiscount !== false)
+                                                : (i.product.category !== 'Services' && i.includeDiscount !== false);
 
                                             // Internal Unit Price shows the price with global discount if type is set
                                             if (appliesDisc && quote.globalDiscountType && gDiscount > 0) {
@@ -314,7 +316,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             const gDiscount = quote.globalDiscountValue || 0;
                                             const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
                                             const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
-                                            const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
+                                            const appliesDisc = quote.globalDiscountType === 'exclude'
+                                                ? (i.includeDiscount !== false)
+                                                : (i.product.category !== 'Services' && i.includeDiscount !== false);
 
                                             const discountedPrice = (quote.globalDiscountType && gDiscount > 0 && appliesDisc)
                                                 ? effectivePrice * (1 - gDiscount / 100)
@@ -364,7 +368,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             const gDiscount = quote.globalDiscountValue || 0;
                                             const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
                                             const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
-                                            const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
+                                            const appliesDisc = quote.globalDiscountType === 'exclude'
+                                                ? (i.includeDiscount !== false)
+                                                : (i.product.category !== 'Services' && i.includeDiscount !== false);
 
                                             const discountedPrice = (quote.globalDiscountType && gDiscount > 0 && appliesDisc)
                                                 ? effectivePrice * (1 - gDiscount / 100)
@@ -561,7 +567,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
                                         const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
 
-                                        const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
+                                        const appliesDisc = quote.globalDiscountType === 'exclude'
+                                            ? (i.includeDiscount !== false)
+                                            : (i.product.category !== 'Services' && i.includeDiscount !== false);
                                         const discountedPrice = (quote.globalDiscountType && gDiscount > 0 && appliesDisc)
                                             ? effectivePrice * (1 - gDiscount / 100)
                                             : effectivePrice;

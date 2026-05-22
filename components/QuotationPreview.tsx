@@ -53,9 +53,22 @@ export default function QuotationPreview({
                             </button>
                             <div className="flex space-x-3">
                                 <button onClick={() => {
-                                    window.print();
+                                    const el = document.querySelector('.bg-white.shadow-xl') as HTMLElement;
+                                    if (!el) return;
+                                    const cName = finalQuote.customer.name.replace(/\s+/g, '_');
+                                    const phone = finalQuote.customer.phone.replace(/\s+/g, '_');
+                                    const filename = `${cName}_${phone}_${finalQuote.id}.pdf`;
+                                    const opt = {
+                                        margin: [0, 0, 0, 0],
+                                        filename,
+                                        image: { type: 'jpeg', quality: 0.98 },
+                                        html2canvas: { scale: 2, useCORS: true, logging: false },
+                                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                                        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                                    };
+                                    (window as any).html2pdf().set(opt).from(el).save();
                                 }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm">
-                                    Print PDF
+                                    Download PDF
                                 </button>
                             </div>
                         </>
@@ -69,22 +82,18 @@ export default function QuotationPreview({
                                 <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 shadow-inner">
                                     <div className="flex flex-col">
                                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Advance Payment</span>
-                                        <div className="flex items-center">
-                                            <span className="text-slate-400 text-xs mr-0.5">₹</span>
-                                            <input 
-                                                type="number" 
-                                                value={finalQuote.advanceAmount || ''} 
-                                                onChange={(e) => onUpdateCustomer?.({ advanceAmount: Number(e.target.value) })}
-                                                className="w-24 bg-transparent border-none outline-none text-sm font-bold text-indigo-600 p-0 focus:ring-0"
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200 shadow-inner">
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Advance Date</span>
-                                        <div className="flex items-center">
+                                        <div className="flex items-center space-x-2">
+                                            <div className="flex items-center">
+                                                <span className="text-slate-400 text-xs mr-0.5">₹</span>
+                                                <input 
+                                                    type="number" 
+                                                    value={finalQuote.advanceAmount || ''} 
+                                                    onChange={(e) => onUpdateCustomer?.({ advanceAmount: Number(e.target.value) })}
+                                                    className="w-24 bg-transparent border-none outline-none text-sm font-bold text-indigo-600 p-0 focus:ring-0"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                            <div className="w-px h-5 bg-slate-300"></div>
                                             <input 
                                                 type="date" 
                                                 value={finalQuote.advanceDate || ''} 
@@ -106,9 +115,22 @@ export default function QuotationPreview({
                                     ) : isSaved ? <><CheckIcon /> Saved</> : <><SaveIcon /> Save Quote</>}
                                 </button>
                                 <button onClick={() => {
-                                    window.print();
+                                    const el = document.querySelector('.bg-white.shadow-xl') as HTMLElement;
+                                    if (!el) return;
+                                    const cName = finalQuote.customer.name.replace(/\s+/g, '_');
+                                    const phone = finalQuote.customer.phone.replace(/\s+/g, '_');
+                                    const filename = `${cName}_${phone}_${finalQuote.id}.pdf`;
+                                    const opt = {
+                                        margin: [0, 0, 0, 0],
+                                        filename,
+                                        image: { type: 'jpeg', quality: 0.98 },
+                                        html2canvas: { scale: 2, useCORS: true, logging: false },
+                                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                                        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                                    };
+                                    (window as any).html2pdf().set(opt).from(el).save();
                                 }} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-all shadow-sm">
-                                    Print PDF
+                                    Download PDF
                                 </button>
                                 <button onClick={() => { onNewQuote(); navigate('/'); }} className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm transition-all shadow-sm ml-4">
                                     New Quote
