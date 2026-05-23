@@ -44,7 +44,8 @@ export const computeGstBase = (items: QuoteItem[], globalDiscountType?: 'include
     const isExclude = globalDiscountType === 'exclude';
 
     let effectivePrice = item.includeGst !== false ? basePrice : basePrice / 1.18;
-    if (isExclude && item.includeDiscount !== false) {
+    // Services are fixed-price — never discounted
+    if (isExclude && !isService && item.includeDiscount !== false) {
       effectivePrice = effectivePrice * (1 - val / 100);
     }
 
@@ -57,9 +58,9 @@ export const calculateTotalDiscount = (items: QuoteItem[], globalDiscountType?: 
   if (val <= 0) return 0;
 
   if (globalDiscountType === 'exclude') {
-    // Discount applies to ALL items (including Services) — matches: total - discount% + GST%
+    // Discount applies to non-Service products only — Services are fixed-price
     return items.reduce((sum, item) => {
-      if (item.includeDiscount === false) return sum;
+      if (item.includeDiscount === false || item.product.category === 'Services') return sum;
       const basePrice = item.customPrice !== undefined ? item.customPrice : item.product.price;
       const effectivePrice = item.includeGst !== false ? basePrice : basePrice / 1.18;
       const itemDiscount = Math.round(effectivePrice * val / 100);
@@ -68,10 +69,9 @@ export const calculateTotalDiscount = (items: QuoteItem[], globalDiscountType?: 
   }
 
   if (globalDiscountType === 'include') {
-    // GST Include applies directly to the Gross Total (which already includes GST where applicable)
-    // Only includes items where discount is toggled ON
-    const discSubtotal = discountableSubtotal(items);
-    return Math.round(discSubtotal * val / 100);
+    // GST Include: prices already contain GST, so apply the discount % to the full total
+    // e.g. 22,340 - 18% = 18,318.8
+    return Math.round(totalPrice(items) * val / 100);
   }
 
   return 0;

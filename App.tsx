@@ -664,9 +664,8 @@ export default function App() {
       // Internal Unit Price shows the price with global discount if type is 'exclude'
       const isExclude = finalQuote.globalDiscountType === 'exclude';
       const gDiscount = finalQuote.globalDiscountValue || 0;
-      const appliesDisc = isExclude
-        ? (item.includeDiscount !== false)
-        : (item.product.category !== 'Services' && item.includeDiscount !== false);
+      // Services are fixed-price — never discounted in any mode
+      const appliesDisc = (item.product.category !== 'Services' && item.includeDiscount !== false);
 
       let unitPrice = effectivePrice;
       if (appliesDisc && isExclude && gDiscount > 0) {
