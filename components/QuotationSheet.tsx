@@ -64,13 +64,13 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
     };
 
     return (
-        <div className="flex flex-col min-h-full bg-white overflow-visible">
+        <div className="flex flex-col min-h-full bg-white overflow-visible print:m-0">
             {/* Top Banner */}
-            <div className="w-full bg-[#004aad] text-white text-center py-2 font-bold tracking-[0.2em] uppercase text-sm print:text-xs print:py-1.5">
+            <div className="w-full bg-[#004aad] text-white text-center py-2 px-2 font-bold tracking-[0.2em] uppercase text-sm print:text-xs print:py-1.5">
                 Quotation
             </div>
 
-            <div className="p-6 print:p-0 print:px-2 flex-1">
+            <div className="py-6 px-4 print:p-0 print:py-2 print:px-2 print:m-0 flex-1">
                 <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-2">
                     <div>
                         <div className="mb-2">
@@ -160,14 +160,14 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                 <table className="w-full mb-8 border-[1.5px] border-slate-900 border-collapse table-fixed hidden md:table print:table">
                     <thead>
                         <tr className="bg-slate-200/80 border-[1.5px] border-slate-900">
-                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[5%]' : 'w-[4%]'}`}>S.NO.</th>
-                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[40%]' : 'w-[20%]'}`}>MODEL & IMAGE</th>
-                            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[28%]">TECHNICAL DETAILS</th>}
-                            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[8%]">AREA</th>}
-                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[10%]' : 'w-[5%]'}`}>QTY</th>
-                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[20%]' : 'w-[10%]'}`}>PRICE</th>
-                            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[9%]">AFTER DISCOUNT</th>}
-                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[25%]' : 'w-[16%]'}`}>TOTAL</th>
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[5%]' : 'w-[4%]'}`}>S.NO.</th>
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[40%]' : 'w-[20%]'}`}>MODEL & IMAGE</th>
+                            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[28%]">TECHNICAL DETAILS</th>}
+                            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[8%]">AREA</th>}
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[10%]' : 'w-[5%]'}`}>QTY</th>
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[20%]' : 'w-[10%]'}`}>PRICE</th>
+                            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[9%]">AFTER DISCOUNT</th>}
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[25%]' : 'w-[16%]'}`}>TOTAL</th>
                         </tr>
                     </thead>
                     <tbody>
