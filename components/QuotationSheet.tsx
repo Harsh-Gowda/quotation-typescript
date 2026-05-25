@@ -70,7 +70,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                 Quotation
             </div>
 
-            <div className="p-10 print:p-2 flex-1">
+            <div className="p-6 print:p-0 print:px-2 flex-1">
                 <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-2">
                     <div>
                         <div className="mb-2">
@@ -160,14 +160,14 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                 <table className="w-full mb-8 border-[1.5px] border-slate-900 border-collapse table-fixed hidden md:table print:table">
                     <thead>
                         <tr className="bg-slate-200/80 border-[1.5px] border-slate-900">
-                            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[4%]">S.NO.</th>
-                            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[20%]">MODEL & IMAGE</th>
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[5%]' : 'w-[4%]'}`}>S.NO.</th>
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[40%]' : 'w-[20%]'}`}>MODEL & IMAGE</th>
                             {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[28%]">TECHNICAL DETAILS</th>}
                             {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[8%]">AREA</th>}
-                            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[5%]">QTY</th>
-                            <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[10%]">PRICE</th>
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[10%]' : 'w-[5%]'}`}>QTY</th>
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[20%]' : 'w-[10%]'}`}>PRICE</th>
                             {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[9%]">AFTER DISCOUNT</th>}
-                            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[12%]">TOTAL</th>}
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[11px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[25%]' : 'w-[16%]'}`}>TOTAL</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -490,7 +490,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
                         {isCustomerView && (
                             <tr>
-                                <td colSpan={3} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Total Amount</td>
+                                <td colSpan={4} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Total Amount</td>
                                 <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                     ₹{(() => {
                                         const totalNoTax = totalPrice(quote.items);

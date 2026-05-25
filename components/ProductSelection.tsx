@@ -126,7 +126,7 @@ export default function ProductSelection({
                 modelNumber: 'SRV-INST',
                 price: 600,
                 category: 'Services',
-                image: '/Assets/products/fan-service.png', // Professional fan installation image
+                image: '/images/fan-installation.png', // Professional fan installation image
             }
         ];
 
