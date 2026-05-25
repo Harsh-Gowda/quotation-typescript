@@ -64,20 +64,18 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
     };
 
     return (
-        <div className="flex flex-col min-h-full bg-white overflow-visible print:m-0">
+        <div className="flex flex-col min-h-full bg-white overflow-visible p-6 md:p-8 print:p-6">
             {/* Top Banner */}
-            <div className="w-full bg-[#004aad] text-white text-center py-2 px-2 font-bold tracking-[0.2em] uppercase text-sm print:text-xs print:py-1.5">
+            <div className="w-full bg-[#004aad] text-white text-center py-2 px-2 font-bold tracking-[0.2em] uppercase text-sm print:text-xs print:py-1.5 rounded-t-sm">
                 Quotation
             </div>
 
-            <div className="py-6 px-4 print:p-0 print:py-2 print:px-2 print:m-0 flex-1">
+            <div className="py-6 px-0 print:p-0 print:py-4 flex-1">
                 <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-2">
                     <div>
                         <div className="mb-2">
                             <img src="/images/magnific-web.png" alt="website logo" className="w-[100px] font-black text-indigo-600 tracking-tighter italic mb-4" />
                             <div className="flex items-center space-x-2 mt-[-4px]">
-
-
 
                                 <span className="text-[7px] font-bold text-slate-500 uppercase tracking-[0.2em] whitespace-nowrap">Designer Fans — Luxury Premium Lighting</span>
 
