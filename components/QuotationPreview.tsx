@@ -41,7 +41,7 @@ export default function QuotationPreview({
     }, [finalQuote]);
 
     return (
-        <div className="max-w-[210mm] mx-auto print:max-w-none print:mx-0">
+        <div className="max-w-[225mm] mx-auto print:max-w-none print:mx-0">
             {/* Action Toolbar */}
             {!isPublicMode && (
                 <div className="mb-6 print:hidden">
