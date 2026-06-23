@@ -64,7 +64,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
     };
 
     return (
-        <div className="flex flex-col min-h-full bg-white overflow-visible p-6 md:p-8 print:p-6">
+        <div className="flex flex-col min-h-full bg-white overflow-visible p-6 md:p-8 print:p-4">
             {/* Top Banner */}
             <div className="w-full bg-[#004aad] text-white text-center py-2 px-2 font-bold tracking-[0.2em] uppercase text-sm print:text-xs print:py-1.5 rounded-t-sm">
                 Quotation
@@ -95,7 +95,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                 </div>
 
                 {!isCustomerView && (
-                    <div className="mb-6 text-[12px]">
+                    <div className="mb-3 print:mb-2 text-[12px]">
                         <div className="flex space-x-1 items-center group">
                             <span className="font-bold w-12 text-slate-900 whitespace-nowrap">To:</span>
                             {editingField === 'customer-name' ? (
@@ -155,7 +155,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
 
                 {/* Desktop Table View */}
-                <table className="w-full mb-8 border-[1.5px] border-slate-900 border-collapse table-fixed hidden md:table print:table">
+                <table className="w-full mb-8 print:mb-2 border-[1.5px] border-slate-900 border-collapse table-fixed hidden md:table print:table" style={{ pageBreakInside: 'auto' }}>
                     <thead>
                         <tr className="bg-slate-200/80 border-[1.5px] border-slate-900">
                             <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[5%]' : 'w-[4%]'}`}>S.NO.</th>
@@ -170,7 +170,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                     </thead>
                     <tbody>
                         {quote.items.map((i, idx) => (
-                            <tr key={idx} className="border-[1.5px] border-slate-900 break-inside-avoid group relative transition-colors hover:bg-slate-50/50 group-hover:z-[100]">
+                            <tr key={idx} className="border-[1.5px] border-slate-900 group relative transition-colors hover:bg-slate-50/50 group-hover:z-[100]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900">{idx + 1}</td>
 
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center">

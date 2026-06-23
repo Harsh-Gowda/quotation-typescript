@@ -768,6 +768,9 @@ export default function App() {
           }
           .no-print-break { page-break-inside: avoid; }
           .print-compact { margin-top: 5px !important; padding-top: 5px !important; }
+          table { page-break-inside: auto; border-collapse: collapse; }
+          thead { display: table-header-group; }
+          tr { page-break-inside: avoid; break-inside: avoid; }
         }
         /* Hide scrollbar for gallery */
         .no-scrollbar::-webkit-scrollbar { display: none; }
