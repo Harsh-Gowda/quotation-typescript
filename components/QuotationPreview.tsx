@@ -66,7 +66,7 @@ export default function QuotationPreview({
                                     image: { type: 'jpeg', quality: 0.98 },
                                     html2canvas: { scale: 2, useCORS: true, logging: false },
                                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                                    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                                    pagebreak: { mode: ['css'], before: '.pdf-page-break-before', avoid: ['tr', 'td'] }
                                 };
                                 (window as any).html2pdf().set(opt).from(el).save();
                             }} className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">
@@ -153,7 +153,7 @@ export default function QuotationPreview({
                                         image: { type: 'jpeg', quality: 0.98 },
                                         html2canvas: { scale: 2, useCORS: true, logging: false },
                                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                                        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                                        pagebreak: { mode: ['css'], before: '.pdf-page-break-before', avoid: ['tr', 'td'] }
                                     };
                                     (window as any).html2pdf().set(opt).from(el).save();
                                 }} className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">
