@@ -548,8 +548,30 @@ export default function ProductSelection({
                     )}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    {/* Add Custom Product Card — always first */}
+                    <button
+                        onClick={() => setSelectedProduct({
+                            id: 'custom-item',
+                            name: '',
+                            modelNumber: 'CUSTOM',
+                            description: '',
+                            price: 0,
+                            category: 'Custom',
+                            image: 'https://cdn-icons-png.flaticon.com/512/3588/3588647.png'
+                        })}
+                        className="group relative flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-indigo-300 bg-gradient-to-br from-indigo-50 to-white p-6 text-center transition-all hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-100 active:scale-95 min-h-[180px]"
+                    >
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 text-3xl shadow-inner group-hover:bg-indigo-200 transition-colors">
+                            +
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-indigo-700">Add Custom Product</p>
+                            <p className="text-xs text-slate-400 mt-0.5">Fan, Light, or any item</p>
+                        </div>
+                    </button>
+
                     {isLoading ? (
-                        <div className="col-span-full py-20 flex flex-col items-center justify-center space-y-4">
+                        <div className="col-span-2 py-20 flex flex-col items-center justify-center space-y-4">
                             <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
                             <p className="text-slate-500 font-bold animate-pulse">Fetching Magnific Catalog...</p>
                         </div>
@@ -559,7 +581,7 @@ export default function ProductSelection({
                             return <ProductCard key={p.id} product={p} onAddClick={() => setSelectedProduct(p)} inCartQty={inCartQty} />;
                         })
                     ) : (
-                        <div className="col-span-full py-20 bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center p-8">
+                        <div className="col-span-2 py-20 bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center p-8">
                             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                                 <SearchIcon />
                             </div>

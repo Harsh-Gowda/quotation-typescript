@@ -295,9 +295,9 @@ interface ProductModalProps {
 
         return (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200">
                     {/* Left Side: Images */}
-                    <div className="md:w-1/2 bg-slate-100 flex flex-col">
+                    <div className="md:w-1/2 bg-slate-100 flex flex-col md:max-h-[90vh] overflow-hidden">
                         <div className="relative flex-1 min-h-[300px]">
                             {displayImage ? (
                                 <img src={displayImage} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
@@ -367,8 +367,8 @@ interface ProductModalProps {
                     </div>
 
                     {/* Right Side: Configuration */}
-                    <div className="md:w-1/2 p-8 flex flex-col">
-                        <div className="flex justify-between items-start mb-6">
+                    <div className="md:w-1/2 p-6 flex flex-col overflow-y-auto no-scrollbar">
+                        <div className="flex justify-between items-start mb-4">
                             <div>
                                 <div className="flex items-center space-x-2">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -388,12 +388,12 @@ interface ProductModalProps {
                                     <h2 className="text-2xl font-bold text-slate-900 mt-1">{product.name}</h2>
                                 )}
                             </div>
-                            <button onClick={onClose} className="hidden md:block text-slate-400 hover:text-slate-600 transition-colors">
+                            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0">
                                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
 
-                        <div className="space-y-5 flex-1 overflow-y-auto no-scrollbar pr-1">
+                        <div className="space-y-4 flex-1 pr-1">
                             {isCustom && (
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Model / Reference Number</label>
@@ -575,7 +575,7 @@ interface ProductModalProps {
                             </div>
                         </div>
 
-                        <div className="pt-8 border-t mt-8 flex items-center justify-between">
+                        <div className="pt-4 border-t mt-4 flex items-center justify-between flex-shrink-0">
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">{(product.category === 'Services' || isCustom) ? 'Charge' : 'Price per unit'}</span>
                                 <span className="text-2xl font-bold text-indigo-700">₹{((product.category === 'Services' || isCustom) && customPrice !== '' ? Number(customPrice) : product.price).toLocaleString('en-IN')}</span>
