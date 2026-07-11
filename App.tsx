@@ -479,7 +479,7 @@ export default function App() {
   // Uses savedQuotes from Supabase to determine counter (avoids localStorage dependency)
   const generateQuotationId = (): string => {
     const userName = loggedInUser?.name || 'USR';
-    const prefix = 'M' + userName.substring(0, 2).toUpperCase();
+    const prefix = 'M' + userName.substring(0, 3).toUpperCase();
 
     // Find all saved quotes starting with the user's prefix
     const userQuotes = savedQuotes.filter(q => q.id.startsWith(`${prefix}-`));

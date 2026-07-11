@@ -32,8 +32,9 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
         if (q.createdBy === currentUser) return true;
         // Legacy quotes without createdBy — check if ID prefix matches user
         if (!q.createdBy) {
-            const prefix = currentUser.substring(0, 3).toUpperCase();
-            return q.id.startsWith(prefix);
+            const newPrefix = 'M' + currentUser.substring(0, 3).toUpperCase();
+            const oldPrefix = 'M' + currentUser.substring(0, 2).toUpperCase();
+            return q.id.startsWith(newPrefix) || q.id.startsWith(oldPrefix);
         }
         return false;
     };
@@ -52,7 +53,7 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
         // Search Filter
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            result = result.filter(q => 
+            result = result.filter(q =>
                 q.id.toLowerCase().includes(query) ||
                 q.customer.name.toLowerCase().includes(query) ||
                 q.customer.phone.toLowerCase().includes(query)
@@ -66,8 +67,8 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
             result = result.filter(q => {
                 const qDate = new Date(q.date);
                 return qDate.getFullYear() === filterDate.getFullYear() &&
-                       qDate.getMonth() === filterDate.getMonth() &&
-                       qDate.getDate() === filterDate.getDate();
+                    qDate.getMonth() === filterDate.getMonth() &&
+                    qDate.getDate() === filterDate.getDate();
             });
         }
 
@@ -163,19 +164,21 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
                     {/* View Toggle */}
                     <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
                         <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                            title="Grid View"
-                        >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                        </button>
-                        <button
                             onClick={() => setViewMode('list')}
                             className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
                             title="List View"
                         >
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
                         </button>
+
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            title="Grid View"
+                        >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                        </button>
+
                     </div>
                 </div>
             </div>
@@ -197,7 +200,7 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
                 <div className="bg-white rounded-xl p-16 text-center shadow-sm border border-slate-200">
                     <p className="text-slate-400 font-medium italic">No quotations found matching your criteria.</p>
                 </div>
-            ) : viewMode === 'grid' ? (
+            ) : viewMode === 'list' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {filteredAndSortedQuotes.map(q => {
                         const isOwner = canEdit(q);
