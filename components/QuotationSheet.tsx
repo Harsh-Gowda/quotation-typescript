@@ -231,8 +231,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
                                 {!isCustomerView && (
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 align-middle">
-                                        <div className="flex flex-col items-center space-y-1 w-full relative">
-                                            <span className="text-[11px] text-slate-600 font-medium leading-relaxed italic block underline decoration-indigo-200/50 underline-offset-4 whitespace-pre-line">
+                                        <div className="flex flex-col items-start space-y-1 w-full relative">
+                                            <span className="text-[11px] text-slate-600 font-medium leading-relaxed italic block underline decoration-indigo-200/50 underline-offset-4 whitespace-pre-line text-left">
                                                 {i.customDescription || i.product.description || [
                                                     i.product.size && `Size: ${i.product.size}`,
                                                     i.product.lamp && `Lamp: ${i.product.lamp}`,
@@ -242,7 +242,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                                 ].filter(Boolean).join('\n')}
                                             </span>
                                             {i.extraNote && (
-                                                <span className="text-[10px] text-blue-600 font-bold whitespace-pre-line border-t border-blue-100 mt-1 pt-1 w-full text-center">
+                                                <span className="text-[10px] text-blue-600 font-bold whitespace-pre-line border-t border-blue-100 mt-1 pt-1 w-full text-left">
                                                     {i.extraNote}
                                                 </span>
                                             )}
