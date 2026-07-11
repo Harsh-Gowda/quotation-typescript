@@ -13,11 +13,14 @@ interface QuotationSheetProps {
     onUpdateItemQuantity?: (index: number, quantity: number) => void;
     onUpdateItemPlace?: (index: number, placeName: string) => void;
     onUpdateItemSetting?: (index: number, key: 'showLineart' | 'includeGst' | 'includeDiscount', value: boolean) => void;
+    onReorderItems?: (fromIndex: number, toIndex: number) => void;
 }
 
-export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting }: QuotationSheetProps) {
+export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems }: QuotationSheetProps) {
     const [editingField, setEditingField] = useState<string | null>(null);
     const [tempValue, setTempValue] = useState<string>('');
+    const [dragIndex, setDragIndex] = useState<number | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
     // Using shared utilities from utils.ts
     const gstBase = computeGstBase(quote.items, quote.globalDiscountType, quote.globalDiscountValue);
@@ -170,8 +173,38 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                     </thead>
                     <tbody>
                         {quote.items.map((i, idx) => (
-                            <tr key={idx} className="border-[1.5px] border-slate-900 group relative transition-colors hover:bg-slate-50/50 group-hover:z-[100]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900">{idx + 1}</td>
+                            <tr
+                                key={idx}
+                                draggable={!!onReorderItems}
+                                onDragStart={() => { setDragIndex(idx); setDragOverIndex(idx); }}
+                                onDragOver={(e) => { e.preventDefault(); setDragOverIndex(idx); }}
+                                onDragEnd={() => {
+                                    if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+                                        onReorderItems?.(dragIndex, dragOverIndex);
+                                    }
+                                    setDragIndex(null);
+                                    setDragOverIndex(null);
+                                }}
+                                onDrop={(e) => { e.preventDefault(); }}
+                                className={`border-[1.5px] border-slate-900 group relative transition-all ${
+                                    dragOverIndex === idx && dragIndex !== idx
+                                        ? 'bg-indigo-50 border-t-2 border-t-indigo-400'
+                                        : dragIndex === idx
+                                        ? 'opacity-40'
+                                        : 'hover:bg-slate-50/50'
+                                }`}
+                                style={{ pageBreakInside: 'avoid', breakInside: 'avoid', cursor: onReorderItems ? 'grab' : 'default' }}
+                            >
+                                <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center text-[12px] font-bold text-slate-900">
+                                        <div className="flex flex-col items-center gap-0.5">
+                                            {onReorderItems && (
+                                                <svg className="w-3 h-3 text-slate-300 group-hover:text-slate-400 transition-colors print:hidden mb-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"/>
+                                                </svg>
+                                            )}
+                                            {idx + 1}
+                                        </div>
+                                    </td>
 
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center">
                                     <div className="flex flex-col items-center justify-center space-y-2 print:space-y-0.5">

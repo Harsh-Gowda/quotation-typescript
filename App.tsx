@@ -366,12 +366,22 @@ export default function App() {
   };
 
   const handleUpdateItemSetting = (index: number, key: 'showLineart' | 'includeGst' | 'includeDiscount', value: boolean) => {
-    if (!finalQuote) return;
-    const updatedItems = [...finalQuote.items];
-    updatedItems[index] = { ...updatedItems[index], [key]: value };
-    setFinalQuote({
-      ...finalQuote,
-      items: updatedItems
+    setFinalQuote(prev => {
+      if (!prev) return prev;
+      const updatedItems = [...prev.items];
+      updatedItems[index] = { ...updatedItems[index], [key]: value };
+      return { ...prev, items: updatedItems };
+    });
+    setIsSaved(false);
+  };
+
+  const handleReorderQuoteItems = (fromIndex: number, toIndex: number) => {
+    setFinalQuote(prev => {
+      if (!prev) return prev;
+      const updated = [...prev.items];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return { ...prev, items: updated };
     });
     setIsSaved(false);
   };
@@ -452,6 +462,16 @@ export default function App() {
     });
   };
 
+  /** Reorder cart items (drag-and-drop from quotation sheet) */
+  const handleReorderItems = (fromIndex: number, toIndex: number) => {
+    setCart(prev => {
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated;
+    });
+  };
+
   // Generate quotation ID in format: PREFIX-COUNTER-DISCOUNT (e.g. MKI-01-20)
   // PREFIX is 'M' + uppercase first two letters of user's name (e.g., MKI for Kiran).
   // COUNTER is a sequential number padded to 2 digits.
@@ -487,8 +507,10 @@ export default function App() {
     const counter = maxCounter + 1;
     const formattedCounter = String(counter).padStart(2, '0');
     const disc = Math.round(discountValue || 0);
+    // Append -F suffix when GST is included in prices
+    const gstSuffix = discountType === 'include' ? '-F' : '';
 
-    return `${prefix}-${formattedCounter}-${disc}`;
+    return `${prefix}-${formattedCounter}-${disc}${gstSuffix}`;
   };
 
   const handleCreateQuotation = async () => {
@@ -876,6 +898,7 @@ export default function App() {
                 onUpdateItemQuantity={handleUpdateItemQuantity}
                 onUpdateItemPlace={handleUpdateItemPlace}
                 onUpdateItemSetting={handleUpdateItemSetting}
+                onReorderItems={handleReorderQuoteItems}
                 onNewQuote={() => {
                   setCart([]);
                   setCustomer({ name: '', email: '', phone: '', address: '', company: '' });
