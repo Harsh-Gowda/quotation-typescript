@@ -275,6 +275,15 @@ export default function App() {
     );
   };
 
+  /** Admin only: remove a product variant+template from local state after DB deletion */
+  const handleProductDeleted = (productId: string) => {
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    // Also remove from cart if present
+    setCart(prev => prev.filter(item => item.product.id !== productId));
+  };
+
+  const isAdmin = loggedInUser?.role === 'admin';
+
   const addToCart = (product: Product, options: {
     placeName?: string,
     size?: string,
@@ -849,6 +858,7 @@ export default function App() {
               editingQuoteId={editingQuoteId}
               isLoading={isLoadingProducts}
               onProductImageSaved={handleProductImageSaved}
+              onDeleteProduct={isAdmin ? handleProductDeleted : undefined}
             />
           } />
 
