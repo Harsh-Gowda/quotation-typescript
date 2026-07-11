@@ -27,9 +27,11 @@ interface ProductModalProps {
     initialValues?: any;
     /** Called after a permanent image URL has been saved to Supabase so the parent can refresh its product list */
     onImageSaved?: (productId: string, newImageUrl: string) => void;
+    /** Admin: delete this product from the catalog database entirely */
+    onDeleteProduct?: (productId: string) => void;
 }
 
-    export default function ProductModal({ product, onClose, onAdd, initialValues, onImageSaved }: ProductModalProps) {
+    export default function ProductModal({ product, onClose, onAdd, initialValues, onImageSaved, onDeleteProduct }: ProductModalProps) {
         const isCustom = product.id === 'custom-item' || product.id === 'fan-installation' || initialValues?.isCustom;
         const [name, setName] = useState(initialValues?.customName || product.name);
         const [modelNumber, setModelNumber] = useState(initialValues?.customModelNumber || product.modelNumber);
@@ -83,6 +85,8 @@ interface ProductModalProps {
         const [dbCategories, setDbCategories] = useState<any[]>([]);
         const [selectedDbCategoryId, setSelectedDbCategoryId] = useState<string>('');
         const [isSavingProduct, setIsSavingProduct] = useState(false);
+        const [isDeleting, setIsDeleting] = useState(false);
+        const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
         const [isUploading, setIsUploading] = useState(false);
         const [uploadError, setUploadError] = useState('');
         const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -182,6 +186,51 @@ interface ProductModalProps {
 
         const displayImage = customImage || product.image;
         const isMissingImage = !product.image && !customImage;
+
+        const handleDeleteImage = async () => {
+            setCustomImage('');
+            // Also clear from DB for catalog products
+            if (product.id !== 'custom-item' && product.category !== 'Services' && product.id !== 'fan-installation') {
+                const { data: variantData } = await supabase
+                    .from('product_variants')
+                    .select('attributes')
+                    .eq('variantId', product.id)
+                    .single();
+                if (variantData) {
+                    const attrs = variantData.attributes || {};
+                    await supabase
+                        .from('product_variants')
+                        .update({ attributes: { ...attrs, media: { primaryImage: null, images: [] } } })
+                        .eq('variantId', product.id);
+                    onImageSaved?.(product.id, '');
+                }
+            }
+        };
+
+        const handleDeleteProduct = async () => {
+            if (!onDeleteProduct) return;
+            setIsDeleting(true);
+            try {
+                // Delete variant first, then template
+                await supabase.from('product_variants').delete().eq('variantId', product.id);
+                // Try to delete template via variantId lookup
+                const { data: variantRow } = await supabase
+                    .from('product_variants')
+                    .select('templateId')
+                    .eq('variantId', product.id)
+                    .maybeSingle();
+                if (variantRow?.templateId) {
+                    await supabase.from('product_templates').delete().eq('templateId', variantRow.templateId);
+                }
+                onDeleteProduct(product.id);
+                onClose();
+            } catch (err: any) {
+                alert('Delete failed: ' + err.message);
+            } finally {
+                setIsDeleting(false);
+                setShowDeleteConfirm(false);
+            }
+        };
 
         const handleAdd = async () => {
             if (isCustom && savePermanently) {
@@ -310,32 +359,46 @@ interface ProductModalProps {
                             <button onClick={onClose} className="absolute top-4 left-4 md:hidden bg-white/80 p-2 rounded-full shadow-md text-slate-800">
                                 <BackIcon />
                             </button>
-                            {/* Upload / Change Image Button */}
-                            <button
-                                type="button"
-                                onClick={() => !isUploading && fileInputRef.current?.click()}
-                                disabled={isUploading}
-                                className={`absolute bottom-3 right-3 flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all disabled:cursor-not-allowed ${
-                                    isUploading
-                                        ? 'bg-indigo-500 text-white'
-                                        : isMissingImage
-                                        ? 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse'
-                                        : 'bg-white/90 hover:bg-white text-slate-700 border border-slate-200'
-                                }`}
-                                title={isMissingImage ? 'This product has no image — upload one' : 'Change product image (saves to database)'}
-                            >
-                                {isUploading ? (
-                                    <>
-                                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-                                        <span>Saving...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                                        <span>{isMissingImage ? 'Upload Image' : 'Change Image'}</span>
-                                    </>
+                            {/* Image action buttons */}
+                            <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                                {/* Delete image button — only show when there is an image */}
+                                {displayImage && (
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteImage}
+                                        className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-bold bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all"
+                                        title="Remove image"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
                                 )}
-                            </button>
+                                {/* Upload / Change Image Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => !isUploading && fileInputRef.current?.click()}
+                                    disabled={isUploading}
+                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all disabled:cursor-not-allowed ${
+                                        isUploading
+                                            ? 'bg-indigo-500 text-white'
+                                            : isMissingImage
+                                            ? 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse'
+                                            : 'bg-white/90 hover:bg-white text-slate-700 border border-slate-200'
+                                    }`}
+                                    title={isMissingImage ? 'Upload image' : 'Change image'}
+                                >
+                                    {isUploading ? (
+                                        <>
+                                            <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                            <span>Saving...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                            <span>{isMissingImage ? 'Upload' : 'Change'}</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -575,18 +638,50 @@ interface ProductModalProps {
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t mt-4 flex items-center justify-between flex-shrink-0">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">{(product.category === 'Services' || isCustom) ? 'Charge' : 'Price per unit'}</span>
-                                <span className="text-2xl font-bold text-indigo-700">₹{((product.category === 'Services' || isCustom) && customPrice !== '' ? Number(customPrice) : product.price).toLocaleString('en-IN')}</span>
+                        <div className="pt-4 border-t mt-4 flex-shrink-0">
+                            {/* Admin delete product */}
+                            {onDeleteProduct && !isCustom && product.id !== 'fan-installation' && (
+                                <div className="mb-3">
+                                    {!showDeleteConfirm ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 transition-all"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            Delete from Catalog
+                                        </button>
+                                    ) : (
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between gap-2">
+                                            <span className="text-xs font-bold text-red-700">Permanently delete this product?</span>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setShowDeleteConfirm(false)} className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all">Cancel</button>
+                                                <button
+                                                    onClick={handleDeleteProduct}
+                                                    disabled={isDeleting}
+                                                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-all"
+                                                >
+                                                    {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">{(product.category === 'Services' || isCustom) ? 'Charge' : 'Price per unit'}</span>
+                                    <span className="text-xl font-bold text-indigo-700">₹{((product.category === 'Services' || isCustom) && customPrice !== '' ? Number(customPrice) : product.price).toLocaleString('en-IN')}</span>
+                                </div>
+                                <button
+                                    onClick={handleAdd}
+                                    disabled={isSavingProduct}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-semibold text-sm transition-all active:scale-95"
+                                >
+                                    {initialValues ? <EditIcon /> : <CartIcon />}
+                                    <span>{isSavingProduct ? 'Saving...' : (initialValues ? 'Update' : 'Add to Quote')}</span>
+                                </button>
                             </div>
-                            <button
-                                onClick={handleAdd}
-                                disabled={isSavingProduct}
-                                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-8 py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center"
-                            >
-                                {initialValues ? <EditIcon /> : <CartIcon />} <span className="ml-2">{isSavingProduct ? 'Saving...' : (initialValues ? 'Update Item' : 'Add to Quotation')}</span>
-                            </button>
                         </div>
                     </div>
                 </div>
