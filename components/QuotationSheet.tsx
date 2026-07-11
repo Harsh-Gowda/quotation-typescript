@@ -161,11 +161,11 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[5%]' : 'w-[4%]'}`}>S.NO.</th>
                             <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[40%]' : 'w-[20%]'}`}>MODEL & IMAGE</th>
                             {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[28%]">TECHNICAL DETAILS</th>}
-                            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[8%]">AREA</th>}
+                            {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[12%]">AREA</th>}
                             <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[10%]' : 'w-[5%]'}`}>QTY</th>
                             <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[20%]' : 'w-[10%]'}`}>PRICE</th>
                             {!isCustomerView && <th className="border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center w-[9%]">AFTER DISCOUNT</th>}
-                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[25%]' : 'w-[16%]'}`}>TOTAL</th>
+                            <th className={`border-[1.5px] border-slate-900 py-3 px-1 text-[10px] print:text-[9px] font-bold text-slate-800 uppercase text-center ${isCustomerView ? 'w-[21%]' : 'w-[12%]'}`}>TOTAL</th>
                         </tr>
                     </thead>
                     <tbody>
