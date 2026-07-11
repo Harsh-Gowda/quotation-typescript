@@ -949,6 +949,17 @@ export default function App() {
               }}
               onDelete={deleteSaved}
               onDuplicate={handleDuplicateQuotation}
+              onNewQuote={() => {
+                setCart([]);
+                setCustomer({ name: '', email: '', phone: '', address: '', company: '' });
+                setFinalQuote(null);
+                setDiscountType(null);
+                setDiscountValue(0);
+                setIsEditMode(false);
+                setEditingQuoteId(null);
+                setIsViewOnly(false);
+                navigate('/');
+              }}
             />
           } />
         </Routes>

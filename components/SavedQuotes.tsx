@@ -13,9 +13,10 @@ interface SavedQuotesProps {
     onEdit: (q: Quotation) => void;
     onDelete: (e: React.MouseEvent, id: string) => void;
     onDuplicate?: (q: Quotation) => void;
+    onNewQuote: () => void;
 }
 
-export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole, isLoading, onLoad, onEdit, onDelete, onDuplicate }: SavedQuotesProps) {
+export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole, isLoading, onLoad, onEdit, onDelete, onDuplicate, onNewQuote }: SavedQuotesProps) {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState('');
@@ -105,7 +106,7 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
         <div className="max-w-6xl mx-auto px-4 pb-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h2 className="text-3xl font-bold text-slate-800">Quote Archive</h2>
-                <button onClick={() => navigate('/')} className="bg-white border text-slate-700 px-4 py-2 rounded-lg font-bold text-sm shadow-sm hover:bg-slate-50 flex items-center transition-colors">
+                <button onClick={onNewQuote} className="bg-white border text-slate-700 px-4 py-2 rounded-lg font-bold text-sm shadow-sm hover:bg-slate-50 flex items-center transition-colors">
                     <BackIcon /> <span className="ml-1">New Quote</span>
                 </button>
             </div>
