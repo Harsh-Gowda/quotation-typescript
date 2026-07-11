@@ -197,8 +197,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 </td>
 
                                 {!isCustomerView && (
-                                    <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center align-middle">
-                                        <div className="flex flex-col items-center justify-center space-y-1 w-full relative">
+                                    <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 align-middle">
+                                        <div className="flex flex-col items-center space-y-1 w-full relative">
                                             <span className="text-[11px] text-slate-600 font-medium leading-relaxed italic block underline decoration-indigo-200/50 underline-offset-4 whitespace-pre-line">
                                                 {i.customDescription || i.product.description || [
                                                     i.product.size && `Size: ${i.product.size}`,
