@@ -239,11 +239,34 @@ interface ProductModalProps {
                     const newTemplateId = crypto.randomUUID();
                     const newVariantId = crypto.randomUUID();
                     const targetCategoryId = selectedDbCategoryId || 'cca299b3-c011-44d8-957a-e67a1df172a9';
+                    
+                    let finalSku = modelNumber || `CUSTOM-${Date.now()}`;
+                    let finalSkuFamily = finalSku;
+
+                    // Check if a template with this skuFamily already exists to avoid unique constraint error
+                    const { data: existingTemplate } = await supabase
+                        .from('product_templates')
+                        .select('templateId')
+                        .eq('skuFamily', finalSkuFamily)
+                        .maybeSingle();
+
+                    // Check if a variant with this sku already exists
+                    const { data: existingVariant } = await supabase
+                        .from('product_variants')
+                        .select('variantId')
+                        .eq('sku', finalSku)
+                        .maybeSingle();
+
+                    if (existingTemplate || existingVariant) {
+                        const uniqueSuffix = `-${Math.floor(Date.now() / 1000)}`;
+                        finalSkuFamily = `${finalSkuFamily}${uniqueSuffix}`;
+                        finalSku = `${finalSku}${uniqueSuffix}`;
+                    }
 
                     // Insert template
                     const { error: tErr } = await supabase.from('product_templates').insert({
                         templateId: newTemplateId,
-                        skuFamily: modelNumber || `CUSTOM-${Date.now()}`,
+                        skuFamily: finalSkuFamily,
                         name: name,
                         brand: 'Custom',
                         categoryId: targetCategoryId,
@@ -258,7 +281,7 @@ interface ProductModalProps {
                     const { error: vErr } = await supabase.from('product_variants').insert({
                         variantId: newVariantId,
                         templateId: newTemplateId,
-                        sku: modelNumber || `CUSTOM-${Date.now()}`,
+                        sku: finalSku,
                         variantName: name,
                         catalogPrice: Number(customPrice || 0),
                         showroomPrice: Number(customPrice || 0),
