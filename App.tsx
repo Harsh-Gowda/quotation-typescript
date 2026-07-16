@@ -282,6 +282,13 @@ export default function App() {
     setCart(prev => prev.filter(item => item.product.id !== productId));
   };
 
+  /** Admin only: update a product in local state after DB update */
+  const handleProductUpdated = (updatedProduct: Product) => {
+    setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    // Also update in cart if present
+    setCart(prev => prev.map(item => item.product.id === updatedProduct.id ? { ...item, product: updatedProduct } : item));
+  };
+
   const isAdmin = loggedInUser?.role === 'admin';
 
   const addToCart = (product: Product, options: {
@@ -881,6 +888,8 @@ export default function App() {
               isLoading={isLoadingProducts}
               onProductImageSaved={handleProductImageSaved}
               onDeleteProduct={isAdmin ? handleProductDeleted : undefined}
+              onUpdateProduct={isAdmin ? handleProductUpdated : undefined}
+              isAdmin={isAdmin}
             />
           } />
 

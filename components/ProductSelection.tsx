@@ -26,12 +26,14 @@ interface ProductSelectionProps {
     isLoading?: boolean;
     onProductImageSaved?: (productId: string, newImageUrl: string) => void;
     onDeleteProduct?: (productId: string) => void;
+    onUpdateProduct?: (product: Product) => void;
+    isAdmin?: boolean;
 }
 
 export default function ProductSelection({
     cart, products, addToCart, removeFromCart, updateQuantity, updateCartItem, subtotal,
     discountType, setDiscountType, discountValue, setDiscountValue,
-    onGenerateQuote, isGenerating, isEditMode, editingQuoteId, isLoading, onProductImageSaved, onDeleteProduct
+    onGenerateQuote, isGenerating, isEditMode, editingQuoteId, isLoading, onProductImageSaved, onDeleteProduct, onUpdateProduct, isAdmin
 }: ProductSelectionProps) {
 
     const navigate = useNavigate();
@@ -597,6 +599,8 @@ export default function ProductSelection({
                     onClose={() => { setSelectedProduct(null); setEditingIndex(null); }}
                     onImageSaved={onProductImageSaved}
                     onDeleteProduct={onDeleteProduct}
+                    onUpdateProduct={onUpdateProduct}
+                    isAdmin={isAdmin}
                     onAdd={(options) => {
                         const fullOptions = {
                             ...options,
