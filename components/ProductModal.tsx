@@ -41,7 +41,23 @@ interface ProductModalProps {
         const [name, setName] = useState(initialValues?.customName || product.name);
         const [modelNumber, setModelNumber] = useState(initialValues?.customModelNumber || product.modelNumber);
         const [place, setPlace] = useState(initialValues?.placeName || '');
-        const defaultDescription = initialValues?.customDescription || product.description || [
+
+        // Helper: deduplicate description lines that have the same value after the colon
+        const deduplicateDescription = (text: string): string => {
+            if (!text) return text;
+            const lines = text.split('\n');
+            const seenValues = new Set<string>();
+            return lines.filter(line => {
+                const colonIdx = line.indexOf(':');
+                const val = colonIdx >= 0 ? line.slice(colonIdx + 1).trim().toLowerCase() : line.trim().toLowerCase();
+                if (!val) return true; // keep empty lines
+                if (seenValues.has(val)) return false;
+                seenValues.add(val);
+                return true;
+            }).join('\n');
+        };
+
+        const rawDefaultDescription = initialValues?.customDescription || product.description || [
             product.size && `Size: ${product.size}`,
             product.lamp && `Lamp: ${product.lamp}`,
             product.finishing && `Finish: ${product.finishing}`,
@@ -54,6 +70,7 @@ interface ProductModalProps {
             product.suitableFor && `Suitable For: ${product.suitableFor}`,
             product.lightOption && `Light: ${product.lightOption}`
         ].filter(Boolean).join('\n');
+        const defaultDescription = deduplicateDescription(rawDefaultDescription as string);
 
         const [customCategory, setCustomCategory] = useState<'Fan' | 'Light' | 'Other' | null>(
             initialValues?.customCategory || (isCustom && product.id !== 'fan-installation' ? null : 'Other')
@@ -213,28 +230,45 @@ interface ProductModalProps {
         };
 
         const handleDeleteProduct = async () => {
-            if (!onDeleteProduct) return;
             setIsDeleting(true);
             try {
-                // Fetch templateId BEFORE deleting the variant
-                const { data: variantRow } = await supabase
+                // Step 1: Fetch templateId BEFORE deleting the variant
+                const { data: variantRow, error: fetchErr } = await supabase
                     .from('product_variants')
                     .select('templateId')
                     .eq('variantId', product.id)
                     .maybeSingle();
 
-                // Delete the variant
-                await supabase.from('product_variants').delete().eq('variantId', product.id);
-
-                // Now delete the template if we found one
-                if (variantRow?.templateId) {
-                    await supabase.from('product_templates').delete().eq('templateId', variantRow.templateId);
+                if (fetchErr) {
+                    console.warn('Could not fetch templateId (will still delete variant):', fetchErr.message);
                 }
 
-                onDeleteProduct(product.id);
+                // Step 2: Delete the variant
+                const { error: variantDeleteErr } = await supabase
+                    .from('product_variants')
+                    .delete()
+                    .eq('variantId', product.id);
+
+                if (variantDeleteErr) {
+                    throw new Error('Failed to delete variant: ' + variantDeleteErr.message);
+                }
+
+                // Step 3: Delete the template if we found one
+                if (variantRow?.templateId) {
+                    const { error: templateDeleteErr } = await supabase
+                        .from('product_templates')
+                        .delete()
+                        .eq('templateId', variantRow.templateId);
+                    if (templateDeleteErr) {
+                        console.warn('Template delete failed (variant already deleted):', templateDeleteErr.message);
+                    }
+                }
+
+                // Notify parent to remove from UI
+                onDeleteProduct?.(product.id);
                 onClose();
             } catch (err: any) {
-                alert('Delete failed: ' + err.message);
+                alert('Delete failed: ' + (err.message || String(err)));
             } finally {
                 setIsDeleting(false);
                 setShowDeleteConfirm(false);
