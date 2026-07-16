@@ -29,10 +29,15 @@ interface ProductModalProps {
     onImageSaved?: (productId: string, newImageUrl: string) => void;
     /** Admin: delete this product from the catalog database entirely */
     onDeleteProduct?: (productId: string) => void;
+    /** Admin: update product details in the database */
+    onUpdateProduct?: (product: Product) => void;
+    isAdmin?: boolean;
 }
 
-    export default function ProductModal({ product, onClose, onAdd, initialValues, onImageSaved, onDeleteProduct }: ProductModalProps) {
+    export default function ProductModal({ product, onClose, onAdd, initialValues, onImageSaved, onDeleteProduct, onUpdateProduct, isAdmin }: ProductModalProps) {
         const isCustom = product.id === 'custom-item' || product.id === 'fan-installation' || initialValues?.isCustom;
+        const [isEditingCatalog, setIsEditingCatalog] = useState(false);
+        const isEditable = isCustom || isEditingCatalog;
         const [name, setName] = useState(initialValues?.customName || product.name);
         const [modelNumber, setModelNumber] = useState(initialValues?.customModelNumber || product.modelNumber);
         const [place, setPlace] = useState(initialValues?.placeName || '');
@@ -165,7 +170,7 @@ interface ProductModalProps {
                             .update({ attributes: updatedAttrs })
                             .eq('variantId', product.id);
                     }
-                } else if (isCustom || product.category === 'Services') {
+                } else if (isEditable || product.category === 'Services') {
                     // For custom items not yet in DB, we just keep the URL in state
                     // and it will be saved to the QuoteItem or permanently if "savePermanently" is checked
                 }
@@ -232,7 +237,69 @@ interface ProductModalProps {
             }
         };
 
+        const handleUpdateCatalog = async () => {
+            if (!onUpdateProduct) return;
+            setIsSavingProduct(true);
+            try {
+                // Get the templateId from the variant
+                const { data: variantData } = await supabase
+                    .from('product_variants')
+                    .select('templateId, attributes')
+                    .eq('variantId', product.id)
+                    .single();
+                
+                if (variantData?.templateId) {
+                    // Update template
+                    await supabase.from('product_templates').update({
+                        name: name,
+                        skuFamily: modelNumber,
+                        description: description
+                    }).eq('templateId', variantData.templateId);
+                }
+
+                // Update variant
+                const techDetails = { ...customFields };
+                const updatedAttrs = {
+                    ...(variantData?.attributes || {}),
+                    technicalDetails: { ...((variantData?.attributes as any)?.technicalDetails || {}), ...techDetails }
+                };
+
+                const { error: vErr } = await supabase.from('product_variants').update({
+                    variantName: name,
+                    sku: modelNumber,
+                    catalogPrice: Number(customPrice || 0),
+                    showroomPrice: Number(customPrice || 0),
+                    attributes: updatedAttrs,
+                    updatedAt: new Date().toISOString()
+                }).eq('variantId', product.id);
+
+                if (vErr) throw new Error(vErr.message);
+
+                // Notify parent to update UI
+                onUpdateProduct({
+                    ...product,
+                    name,
+                    modelNumber,
+                    description,
+                    price: Number(customPrice || 0),
+                    image: customImage || product.image,
+                    ...techDetails
+                });
+
+                setIsEditingCatalog(false);
+                alert("Catalog product updated successfully!");
+            } catch (err: any) {
+                alert("Failed to update product: " + err.message);
+            } finally {
+                setIsSavingProduct(false);
+            }
+        };
+
         const handleAdd = async () => {
+            if (isEditingCatalog) {
+                return handleUpdateCatalog();
+            }
+
             if (isCustom && savePermanently) {
                 setIsSavingProduct(true);
                 try {
@@ -312,13 +379,13 @@ interface ProductModalProps {
                 isCustom: isCustom,
                 quantity: quantity
             };
-            if (isCustom) {
+            if (isEditable) {
                 addOptions.customName = name;
                 addOptions.customModelNumber = modelNumber;
                 addOptions.customCategory = customCategory;
                 addOptions.customFields = customFields;
             }
-            if ((product.category === 'Services' || isCustom) && customPrice !== '') {
+            if ((product.category === 'Services' || isEditable) && customPrice !== '') {
                 addOptions.customPrice = Number(customPrice);
             }
             if (customImage) {
@@ -458,11 +525,11 @@ interface ProductModalProps {
                             <div>
                                 <div className="flex items-center space-x-2">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        {isCustom ? (customCategory === 'Fan' ? 'Custom Fan' : customCategory === 'Light' ? 'Custom Light' : 'Custom Item') : product.category}
+                                        {isEditable ? (customCategory === 'Fan' ? 'Custom Fan' : customCategory === 'Light' ? 'Custom Light' : 'Custom Item') : product.category}
                                     </span>
-                                    {!isCustom && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono font-bold">{product.modelNumber}</span>}
+                                    {!isEditable && <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono font-bold">{product.modelNumber}</span>}
                                 </div>
-                                {isCustom ? (
+                                {isEditable ? (
                                     <input 
                                         type="text"
                                         className="text-2xl font-bold text-slate-900 mt-1 border-b border-dashed border-slate-300 outline-none focus:border-indigo-500 w-full"
@@ -480,7 +547,7 @@ interface ProductModalProps {
                         </div>
 
                         <div className="space-y-4 flex-1 pr-1">
-                            {isCustom && (
+                            {isEditable && (
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Model / Reference Number</label>
                                     <input
@@ -493,7 +560,7 @@ interface ProductModalProps {
                                 </div>
                             )}
 
-                            {isCustom && customCategory === 'Fan' && (
+                            {isEditable && customCategory === 'Fan' && (
                                 <div className="grid grid-cols-2 gap-3">
                                     {[
                                         { key: 'sweep', label: 'Sweep' },
@@ -519,7 +586,7 @@ interface ProductModalProps {
                                 </div>
                             )}
 
-                            {isCustom && customCategory === 'Light' && (
+                            {isEditable && customCategory === 'Light' && (
                                 <div className="grid grid-cols-2 gap-3">
                                     {[
                                         { key: 'size', label: 'Size' },
@@ -541,15 +608,15 @@ interface ProductModalProps {
                                 </div>
                             )}
 
-                            {((isCustom && customCategory === 'Other') || (!isCustom && product.id !== 'fan-installation')) && (
+                            {((isEditable && customCategory === 'Other') || (!isEditable && product.id !== 'fan-installation')) && (
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{isCustom ? 'Description' : 'Technical Details / Description'}</label>
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{isEditable ? 'Description' : 'Technical Details / Description'}</label>
                                     <textarea
                                         rows={3}
                                         className="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-slate-700 font-medium text-sm whitespace-pre-wrap outline-none resize-none focus:ring-2 focus:ring-indigo-500 transition-all"
                                         value={description}
                                         onChange={e => setDescription(e.target.value)}
-                                        placeholder={isCustom ? "Add details for this custom item..." : ""}
+                                        placeholder={isEditable ? "Add details for this item..." : ""}
                                     />
                                 </div>
                             )}
@@ -592,10 +659,10 @@ interface ProductModalProps {
                                 </div>
                             )}
 
-                            {/* Price Override for Services or Custom Items */}
-                            {(product.category === 'Services' || isCustom) && (
+                            {/* Price Override for Services or Editable Items */}
+                            {(product.category === 'Services' || isEditable) && (
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-green-600 uppercase tracking-wider">{isCustom ? 'Item Price (₹)' : 'Service Charge (₹)'}</label>
+                                    <label className="text-[10px] font-bold text-green-600 uppercase tracking-wider">{isEditable ? 'Item Price (₹)' : 'Service Charge (₹)'}</label>
                                     <div className="flex items-center space-x-2 bg-white px-3 py-2 border border-green-200 rounded-xl focus-within:ring-2 ring-green-500/20 ring-offset-1">
                                          <span className="text-slate-400 font-bold">₹</span>
                                          <input
@@ -620,7 +687,7 @@ interface ProductModalProps {
                                 />
                             </div>
 
-                            {product.category !== 'Services' && !isCustom && (
+                            {product.category !== 'Services' && !isEditable && (
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Installation Room / Place</label>
                                     <input
@@ -662,33 +729,62 @@ interface ProductModalProps {
                         </div>
 
                         <div className="pt-4 border-t mt-4 flex-shrink-0">
-                            {/* Admin delete product */}
-                            {onDeleteProduct && !isCustom && product.id !== 'fan-installation' && (
-                                <div className="mb-3">
+                            {/* Admin actions */}
+                            {isAdmin && !isCustom && product.id !== 'fan-installation' && (
+                                <div className="mb-3 flex flex-col sm:flex-row gap-2">
                                     {!showDeleteConfirm ? (
                                         <button
                                             type="button"
                                             onClick={() => setShowDeleteConfirm(true)}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 transition-all"
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-200 text-red-600 text-xs font-bold hover:bg-red-50 transition-all"
                                         >
                                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            Delete from Catalog
+                                            Delete
                                         </button>
                                     ) : (
-                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center justify-between gap-2">
-                                            <span className="text-xs font-bold text-red-700">Permanently delete this product?</span>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => setShowDeleteConfirm(false)} className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all">Cancel</button>
+                                        <div className="flex-1 bg-red-50 border border-red-200 rounded-lg p-2 flex items-center justify-between gap-1">
+                                            <span className="text-[10px] font-bold text-red-700">Delete product?</span>
+                                            <div className="flex gap-1">
+                                                <button onClick={() => setShowDeleteConfirm(false)} className="px-2 py-1 text-[10px] font-bold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all">Cancel</button>
                                                 <button
                                                     onClick={handleDeleteProduct}
                                                     disabled={isDeleting}
-                                                    className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-all"
+                                                    className="px-2 py-1 text-[10px] font-bold rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-all"
                                                 >
-                                                    {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+                                                    {isDeleting ? '...' : 'Yes'}
                                                 </button>
                                             </div>
                                         </div>
                                     )}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (!isEditingCatalog) {
+                                                // Prepare fields
+                                                setCustomPrice(String(product.price));
+                                                setCustomCategory(product.category === 'Fans' || product.category === 'Fan' ? 'Fan' : 'Light');
+                                                setCustomFields({
+                                                    sweep: product.sweep || '',
+                                                    motorSpec: product.motorSpec || '',
+                                                    noOfBlades: product.noOfBlades || '',
+                                                    bodyColor: product.bodyColor || '',
+                                                    bladeFinish: product.bladeFinish || '',
+                                                    lightOption: product.lightOption || '',
+                                                    heightOfFan: product.heightOfFan || '',
+                                                    airflow: product.airflow || '',
+                                                    size: product.size || '',
+                                                    lamp: product.lamp || '',
+                                                    finishing: product.finishing || '',
+                                                    suitablePlace: product.suitablePlace || ''
+                                                });
+                                            }
+                                            setIsEditingCatalog(!isEditingCatalog);
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-indigo-200 text-indigo-600 text-xs font-bold hover:bg-indigo-50 transition-all"
+                                    >
+                                        <EditIcon />
+                                        {isEditingCatalog ? 'Cancel Edit' : 'Edit Details'}
+                                    </button>
                                 </div>
                             )}
                             <div className="flex items-center justify-between">
