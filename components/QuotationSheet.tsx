@@ -531,11 +531,43 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
                                 {/* Round Off Row */}
                                 {!isCustomerView && (
-                                    <tr>
+                                    <tr 
+                                        className={`group ${(!quote.manualRoundOff && !editingRoundOff) ? "print:hidden" : ""}`}
+                                        data-html2canvas-ignore={(!quote.manualRoundOff && !editingRoundOff) ? "true" : undefined}
+                                    >
                                         <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-600 uppercase leading-none">
                                             Round Off
                                         </td>
-                                        <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-700 leading-none">
+                                        <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-700 leading-none relative">
+                                            {/* Floating Actions Bar */}
+                                            {isEditable && onUpdateRoundOff && (
+                                                <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto flex flex-col items-center gap-2 p-2 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-[0_15px_40px_rgba(0,0,0,0.15)] z-[9999] print:hidden scale-95 group-hover:scale-100 origin-left after:content-[''] after:absolute after:-left-4 after:top-0 after:bottom-0 after:w-4 after:bg-transparent">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (quote.manualRoundOff) {
+                                                                onUpdateRoundOff(0);
+                                                            } else {
+                                                                const totalNoTax = totalPrice(quote.items);
+                                                                const gstAmt = Math.round(gstBase * 0.18);
+                                                                const baseFinalAmount = totalNoTax + gstAmt - totalDiscountAmount;
+                                                                const baseBalance = quote.advanceAmount ? Math.max(0, baseFinalAmount - quote.advanceAmount) : baseFinalAmount;
+                                                                const rounded = baseBalance > 100 ? Math.floor(baseBalance / 100) * 100 : baseBalance;
+                                                                onUpdateRoundOff(rounded);
+                                                            }
+                                                        }}
+                                                        className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex flex-col items-center justify-center border shadow-sm ${quote.manualRoundOff
+                                                            ? 'bg-orange-600 text-white border-orange-700'
+                                                            : 'bg-white text-orange-600 border-orange-100 hover:bg-orange-50'
+                                                            }`}
+                                                        title="Round Off Toggle"
+                                                    >
+                                                        <span className="scale-75 text-[8px]">ROFF</span>
+                                                        <span className="text-[7px] mt-[-4px]">{quote.manualRoundOff ? 'ON' : 'OFF'}</span>
+                                                    </button>
+                                                </div>
+                                            )}
+
                                             {isEditable && onUpdateRoundOff ? (
                                                 editingRoundOff ? (
                                                     <input
@@ -586,9 +618,11 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     ₹{(() => {
                                         const totalNoTax = totalPrice(quote.items);
                                         const gstAmt = Math.round(gstBase * 0.18);
-
-                                        const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                        return (quote.manualRoundOff && quote.manualRoundOff !== 0 ? quote.manualRoundOff : finalAmount).toLocaleString('en-IN');
+                                        const baseFinalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
+                                        const parsedRoundOff = Number(quote.manualRoundOff) || 0;
+                                        const baseBalance = quote.advanceAmount ? Math.max(0, baseFinalAmount - quote.advanceAmount) : baseFinalAmount;
+                                        const balanceDue = Math.max(0, baseBalance - parsedRoundOff);
+                                        return balanceDue.toLocaleString('en-IN');
                                     })()}
                                 </td>
                             </tr>
@@ -777,8 +811,11 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         const totalNoTax = totalPrice(quote.items);
                                         const gstAmt = Math.round(gstBase * 0.18);
 
-                                        const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                        return (quote.manualRoundOff && quote.manualRoundOff !== 0 ? quote.manualRoundOff : finalAmount).toLocaleString('en-IN');
+                                        const baseFinalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
+                                        const parsedRoundOff = Number(quote.manualRoundOff) || 0;
+                                        const baseBalance = quote.advanceAmount ? Math.max(0, baseFinalAmount - quote.advanceAmount) : baseFinalAmount;
+                                        const balanceDue = Math.max(0, baseBalance - parsedRoundOff);
+                                        return balanceDue.toLocaleString('en-IN');
                                     })()}
                                 </span>
                             </div>
@@ -820,11 +857,11 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     const totalNoTax = totalPrice(quote.items);
                                     const gstAmt = Math.round(gstBase * 0.18);
                                     const baseFinalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                    const scannerAmount = (quote.manualRoundOff !== undefined && quote.manualRoundOff !== 0) 
-                                        ? quote.manualRoundOff 
-                                        : baseFinalAmount;
-                                        
-                                    const balanceDue = quote.advanceAmount ? Math.max(0, scannerAmount - quote.advanceAmount) : scannerAmount;
+                                    
+                                    // The manual round off is the exact final amount the customer should pay.
+                                    const parsedRoundOff = Number(quote.manualRoundOff) || 0;
+                                    const baseBalance = quote.advanceAmount ? Math.max(0, baseFinalAmount - quote.advanceAmount) : baseFinalAmount;
+                                    const balanceDue = parsedRoundOff !== 0 ? parsedRoundOff : baseBalance;
 
                                     return (
                                         <div className="text-left w-full flex flex-col items-start">
