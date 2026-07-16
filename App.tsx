@@ -624,6 +624,12 @@ export default function App() {
     setIsSaved(false);
   };
 
+  const handleUpdateRoundOff = (value: number) => {
+    if (!finalQuote) return;
+    setFinalQuote({ ...finalQuote, manualRoundOff: value });
+    setIsSaved(false);
+  };
+
   const saveToSupabase = async () => {
     if (!finalQuote || isSaving) return;
     setIsSaving(true);
@@ -908,6 +914,7 @@ export default function App() {
                 onUpdateItemPlace={handleUpdateItemPlace}
                 onUpdateItemSetting={handleUpdateItemSetting}
                 onReorderItems={handleReorderQuoteItems}
+                onUpdateRoundOff={handleUpdateRoundOff}
                 onNewQuote={() => {
                   setCart([]);
                   setCustomer({ name: '', email: '', phone: '', address: '', company: '' });
