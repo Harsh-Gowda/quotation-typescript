@@ -14,13 +14,16 @@ interface QuotationSheetProps {
     onUpdateItemPlace?: (index: number, placeName: string) => void;
     onUpdateItemSetting?: (index: number, key: 'showLineart' | 'includeGst' | 'includeDiscount', value: boolean) => void;
     onReorderItems?: (fromIndex: number, toIndex: number) => void;
+    onUpdateRoundOff?: (value: number) => void;
 }
 
-export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems }: QuotationSheetProps) {
+export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateRoundOff }: QuotationSheetProps) {
     const [editingField, setEditingField] = useState<string | null>(null);
     const [tempValue, setTempValue] = useState<string>('');
     const [dragIndex, setDragIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+    const [editingRoundOff, setEditingRoundOff] = useState(false);
+    const [roundOffTemp, setRoundOffTemp] = useState('');
 
     // Using shared utilities from utils.ts
     const gstBase = computeGstBase(quote.items, quote.globalDiscountType, quote.globalDiscountValue);
@@ -233,13 +236,26 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 align-middle">
                                         <div className="flex flex-col items-start space-y-1 w-full relative">
                                             <span className="text-[11px] text-slate-600 font-medium leading-relaxed italic block underline decoration-indigo-200/50 underline-offset-4 whitespace-pre-line text-left">
-                                                {i.customDescription || i.product.description || [
-                                                    i.product.size && `Size: ${i.product.size}`,
-                                                    i.product.lamp && `Lamp: ${i.product.lamp}`,
-                                                    i.product.finishing && `Finish: ${i.product.finishing}`,
-                                                    i.product.sweep && `Sweep: ${i.product.sweep}`,
-                                                    i.product.motorSpec && `Motor: ${i.product.motorSpec}`
-                                                ].filter(Boolean).join('\n')}
+                                                {(() => {
+                                                    const raw = i.customDescription || i.product.description || [
+                                                        i.product.size && `Size: ${i.product.size}`,
+                                                        i.product.lamp && `Lamp: ${i.product.lamp}`,
+                                                        i.product.finishing && `Finish: ${i.product.finishing}`,
+                                                        i.product.sweep && `Sweep: ${i.product.sweep}`,
+                                                        i.product.motorSpec && `Motor: ${i.product.motorSpec}`
+                                                    ].filter(Boolean).join('\n');
+                                                    // Deduplicate lines that share the same value after the colon
+                                                    const lines = (raw || '').split('\n');
+                                                    const seenValues = new Set<string>();
+                                                    const deduped = lines.filter(line => {
+                                                        const colonIdx = line.indexOf(':');
+                                                        const val = colonIdx >= 0 ? line.slice(colonIdx + 1).trim().toLowerCase() : line.trim().toLowerCase();
+                                                        if (val && seenValues.has(val)) return false;
+                                                        if (val) seenValues.add(val);
+                                                        return true;
+                                                    });
+                                                    return deduped.join('\n');
+                                                })()}
                                             </span>
                                             {i.extraNote && (
                                                 <span className="text-[10px] text-blue-600 font-bold whitespace-pre-line border-t border-blue-100 mt-1 pt-1 w-full text-left">
@@ -510,6 +526,53 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         </td>
                                     </tr>
                                 )}
+
+                                {/* Round Off Row */}
+                                {!isCustomerView && (
+                                    <tr>
+                                        <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-600 uppercase leading-none">
+                                            Round Off
+                                        </td>
+                                        <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-700 leading-none">
+                                            {isEditable && onUpdateRoundOff ? (
+                                                editingRoundOff ? (
+                                                    <input
+                                                        type="number"
+                                                        value={roundOffTemp}
+                                                        onChange={e => setRoundOffTemp(e.target.value)}
+                                                        onBlur={() => {
+                                                            onUpdateRoundOff(Number(roundOffTemp) || 0);
+                                                            setEditingRoundOff(false);
+                                                        }}
+                                                        onKeyDown={e => {
+                                                            if (e.key === 'Enter') { onUpdateRoundOff(Number(roundOffTemp) || 0); setEditingRoundOff(false); }
+                                                            if (e.key === 'Escape') setEditingRoundOff(false);
+                                                        }}
+                                                        className="w-20 text-center border-b-2 border-indigo-500 outline-none bg-transparent font-bold"
+                                                        autoFocus
+                                                        placeholder="0"
+                                                    />
+                                                ) : (
+                                                    <span
+                                                        className="cursor-pointer hover:bg-indigo-50 px-2 py-1 rounded inline-block"
+                                                        onClick={() => { setRoundOffTemp(String(quote.manualRoundOff ?? 0)); setEditingRoundOff(true); }}
+                                                        title="Click to edit round off"
+                                                    >
+                                                        {quote.manualRoundOff && quote.manualRoundOff !== 0 ? (
+                                                            <span className={(quote.manualRoundOff || 0) >= 0 ? 'text-green-700' : 'text-red-600'}>
+                                                                {(quote.manualRoundOff || 0) >= 0 ? '+' : ''}{quote.manualRoundOff}
+                                                            </span>
+                                                        ) : <span className="text-slate-400 text-[10px]">+ click to add</span>}
+                                                    </span>
+                                                )
+                                            ) : (
+                                                <span className={(quote.manualRoundOff || 0) >= 0 ? 'text-green-700' : 'text-red-600'}>
+                                                    {(quote.manualRoundOff || 0) >= 0 ? '+' : ''}{quote.manualRoundOff || 0}
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                )}
                             </>
                         )}
 
@@ -685,6 +748,15 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
                                             return finalAmount.toLocaleString('en-IN');
                                         })()}
+                                    </span>
+                                </div>
+                            )}
+                            {/* Round Off - mobile */}
+                            {(quote.manualRoundOff !== undefined && quote.manualRoundOff !== 0) && (
+                                <div className="flex justify-between">
+                                    <span className="text-slate-400">Round Off</span>
+                                    <span className={`font-bold ${(quote.manualRoundOff || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                        {(quote.manualRoundOff || 0) >= 0 ? '+' : ''}{quote.manualRoundOff}
                                     </span>
                                 </div>
                             )}

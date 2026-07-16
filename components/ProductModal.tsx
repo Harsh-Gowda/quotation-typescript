@@ -216,17 +216,21 @@ interface ProductModalProps {
             if (!onDeleteProduct) return;
             setIsDeleting(true);
             try {
-                // Delete variant first, then template
-                await supabase.from('product_variants').delete().eq('variantId', product.id);
-                // Try to delete template via variantId lookup
+                // Fetch templateId BEFORE deleting the variant
                 const { data: variantRow } = await supabase
                     .from('product_variants')
                     .select('templateId')
                     .eq('variantId', product.id)
                     .maybeSingle();
+
+                // Delete the variant
+                await supabase.from('product_variants').delete().eq('variantId', product.id);
+
+                // Now delete the template if we found one
                 if (variantRow?.templateId) {
                     await supabase.from('product_templates').delete().eq('templateId', variantRow.templateId);
                 }
+
                 onDeleteProduct(product.id);
                 onClose();
             } catch (err: any) {
