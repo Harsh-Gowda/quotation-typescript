@@ -499,7 +499,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{quote.advanceAmount.toLocaleString('en-IN')}</td>
                                         </tr>
                                         <tr>
-                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Total Amount</td>
+                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Balance Amount
+</td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                                 ₹{(() => {
                                                     const totalNoTax = totalPrice(quote.items);
@@ -513,7 +514,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     </>
                                 ) : (
                                     <tr>
-                                        <td colSpan={7} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Total Amount
+                                        <td colSpan={7} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Balance Amount
+
                                         </td>
                                         <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                             ₹{(() => {
@@ -559,15 +561,15 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                                         title="Click to edit round off"
                                                     >
                                                         {quote.manualRoundOff && quote.manualRoundOff !== 0 ? (
-                                                            <span className={(quote.manualRoundOff || 0) >= 0 ? 'text-green-700' : 'text-red-600'}>
-                                                                {(quote.manualRoundOff || 0) >= 0 ? '+' : ''}{quote.manualRoundOff}
+                                                            <span className="text-indigo-700">
+                                                                ₹{quote.manualRoundOff.toLocaleString('en-IN')}
                                                             </span>
                                                         ) : <span className="text-slate-400 text-[10px]">+ click to add</span>}
                                                     </span>
                                                 )
                                             ) : (
-                                                <span className={(quote.manualRoundOff || 0) >= 0 ? 'text-green-700' : 'text-red-600'}>
-                                                    {(quote.manualRoundOff || 0) >= 0 ? '+' : ''}{quote.manualRoundOff || 0}
+                                                <span className="text-indigo-700">
+                                                    ₹{(quote.manualRoundOff || 0).toLocaleString('en-IN')}
                                                 </span>
                                             )}
                                         </td>
@@ -578,14 +580,15 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
                         {isCustomerView && (
                             <tr>
-                                <td colSpan={4} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Total Amount</td>
+                                <td colSpan={4} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Balance Amount
+</td>
                                 <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                     ₹{(() => {
                                         const totalNoTax = totalPrice(quote.items);
                                         const gstAmt = Math.round(gstBase * 0.18);
 
                                         const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                        return finalAmount.toLocaleString('en-IN');
+                                        return (quote.manualRoundOff && quote.manualRoundOff !== 0 ? quote.manualRoundOff : finalAmount).toLocaleString('en-IN');
                                     })()}
                                 </td>
                             </tr>
@@ -725,7 +728,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         <span className="font-bold">{quote.advanceAmount.toLocaleString('en-IN')}</span>
                                     </div>
                                     <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
-                                        <span className="font-bold uppercase tracking-wider">Total Amount</span>
+                                        <span className="font-bold uppercase tracking-wider">Balance Amount
+</span>
                                         <span className="font-bold text-green-400">
                                             ₹{(() => {
                                                 const totalNoTax = totalPrice(quote.items);
@@ -739,7 +743,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 </>
                             ) : (
                                 <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
-                                    <span className="font-bold uppercase tracking-wider">Total Amount</span>
+                                    <span className="font-bold uppercase tracking-wider">Balance Amount
+</span>
                                     <span className="font-bold text-green-400">
                                         ₹{(() => {
                                             const totalNoTax = totalPrice(quote.items);
@@ -755,8 +760,8 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             {(quote.manualRoundOff !== undefined && quote.manualRoundOff !== 0) && (
                                 <div className="flex justify-between">
                                     <span className="text-slate-400">Round Off</span>
-                                    <span className={`font-bold ${(quote.manualRoundOff || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                        {(quote.manualRoundOff || 0) >= 0 ? '+' : ''}{quote.manualRoundOff}
+                                    <span className="font-bold text-indigo-400">
+                                        ₹{quote.manualRoundOff.toLocaleString('en-IN')}
                                     </span>
                                 </div>
                             )}
@@ -765,14 +770,15 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                     {isCustomerView && (
                         <div className="bg-slate-800 text-white rounded-xl p-4 space-y-2 text-xs">
                             <div className="flex justify-between items-center text-sm font-bold uppercase tracking-wider">
-                                <span>Total Amount</span>
+                                <span>Balance Amount
+</span>
                                 <span className="text-green-400 text-lg">
                                     ₹{(() => {
                                         const totalNoTax = totalPrice(quote.items);
                                         const gstAmt = Math.round(gstBase * 0.18);
 
                                         const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                        return finalAmount.toLocaleString('en-IN');
+                                        return (quote.manualRoundOff && quote.manualRoundOff !== 0 ? quote.manualRoundOff : finalAmount).toLocaleString('en-IN');
                                     })()}
                                 </span>
                             </div>
@@ -813,8 +819,12 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 {(() => {
                                     const totalNoTax = totalPrice(quote.items);
                                     const gstAmt = Math.round(gstBase * 0.18);
-                                    const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                    const balanceDue = quote.advanceAmount ? Math.max(0, finalAmount - quote.advanceAmount) : finalAmount;
+                                    const baseFinalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
+                                    const scannerAmount = (quote.manualRoundOff !== undefined && quote.manualRoundOff !== 0) 
+                                        ? quote.manualRoundOff 
+                                        : baseFinalAmount;
+                                        
+                                    const balanceDue = quote.advanceAmount ? Math.max(0, scannerAmount - quote.advanceAmount) : scannerAmount;
 
                                     return (
                                         <div className="text-left w-full flex flex-col items-start">
