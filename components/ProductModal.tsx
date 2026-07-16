@@ -789,16 +789,16 @@ interface ProductModalProps {
                             )}
                             <div className="flex items-center justify-between">
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase">{(product.category === 'Services' || isCustom) ? 'Charge' : 'Price per unit'}</span>
-                                    <span className="text-xl font-bold text-indigo-700">₹{((product.category === 'Services' || isCustom) && customPrice !== '' ? Number(customPrice) : product.price).toLocaleString('en-IN')}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">{(product.category === 'Services' || isEditable) ? 'Charge' : 'Price per unit'}</span>
+                                    <span className="text-xl font-bold text-indigo-700">₹{((product.category === 'Services' || isEditable) && customPrice !== '' ? Number(customPrice) : product.price).toLocaleString('en-IN')}</span>
                                 </div>
                                 <button
                                     onClick={handleAdd}
                                     disabled={isSavingProduct}
                                     className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-semibold text-sm transition-all active:scale-95"
                                 >
-                                    {initialValues ? <EditIcon /> : <CartIcon />}
-                                    <span>{isSavingProduct ? 'Saving...' : (initialValues ? 'Update' : 'Add to Quote')}</span>
+                                    {isEditingCatalog ? <EditIcon /> : (initialValues ? <EditIcon /> : <CartIcon />)}
+                                    <span>{isSavingProduct ? 'Saving...' : (isEditingCatalog ? 'Update Catalog' : (initialValues ? 'Update' : 'Add to Quote'))}</span>
                                 </button>
                             </div>
                         </div>
