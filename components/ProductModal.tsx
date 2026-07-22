@@ -634,14 +634,17 @@ interface ProductModalProps {
                             {isEditable && customCategory === 'Fan' && (
                                 <div className="grid grid-cols-2 gap-3">
                                     {[
+                                        { key: 'bodyColor', label: 'Body Color' },
+                                        { key: 'bladeType', label: 'Blade Type' },
                                         { key: 'sweep', label: 'Sweep' },
+                                        { key: 'heightOfFan', label: 'Height of Fan' },
                                         { key: 'motorSpec', label: 'Motor Spec' },
                                         { key: 'noOfBlades', label: 'No. of Blades' },
-                                        { key: 'bodyColor', label: 'Body Color' },
                                         { key: 'bladeFinish', label: 'Blade Finish' },
                                         { key: 'lightOption', label: 'Light Option' },
-                                        { key: 'heightOfFan', label: 'Height of Fan' },
-                                        { key: 'airflow', label: 'Airflow' }
+                                        { key: 'airflow', label: 'Airflow' },
+                                        { key: 'suitableFor', label: 'Suitable For' },
+                                        { key: 'remoteControl', label: 'Remote Control' },
                                     ].map(field => (
                                         <div key={field.key} className="space-y-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{field.label}</label>
@@ -839,10 +842,13 @@ interface ProductModalProps {
                                                     motorSpec: product.motorSpec || '',
                                                     noOfBlades: product.noOfBlades || '',
                                                     bodyColor: product.bodyColor || '',
+                                                    bladeType: product.bladeType || '',
                                                     bladeFinish: product.bladeFinish || '',
                                                     lightOption: product.lightOption || '',
                                                     heightOfFan: product.heightOfFan || '',
                                                     airflow: product.airflow || '',
+                                                    suitableFor: product.suitableFor || '',
+                                                    remoteControl: product.remoteControl || '',
                                                     size: product.size || '',
                                                     lamp: product.lamp || '',
                                                     finishing: product.finishing || '',
