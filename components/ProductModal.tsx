@@ -109,10 +109,11 @@ interface ProductModalProps {
                 if (customFields.lamp) parts.push(`Lamp: ${customFields.lamp}`);
                 if (customFields.finishing) parts.push(`Finish: ${customFields.finishing}`);
                 if (customFields.suitablePlace) parts.push(`Suitable Place: ${customFields.suitablePlace}`);
-                }
+            }
+            if (parts.length > 0) {
                 setDescription(parts.join('\n'));
             }
-        }, [customFields, customCategory, isCustom]);
+        }, [customFields, customCategory, isCustom, isEditingCatalog, product.category]);
         const [extraNote, setExtraNote] = useState(initialValues?.extraNote || '');
         const [customPrice, setCustomPrice] = useState<string>(initialValues?.customPrice !== undefined ? String(initialValues.customPrice) : '');
         const [quantity, setQuantity] = useState<number>(initialValues?.quantity || 1);
