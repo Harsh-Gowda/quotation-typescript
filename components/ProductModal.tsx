@@ -302,7 +302,7 @@ interface ProductModalProps {
                     .single();
                 
                 if (variantData?.templateId) {
-                    // Update template
+                    // Update template — save the rebuilt description
                     await supabase.from('product_templates').update({
                         name: name,
                         skuFamily: modelNumber,
@@ -310,11 +310,15 @@ interface ProductModalProps {
                     }).eq('templateId', variantData.templateId);
                 }
 
-                // Update variant
+                // Update variant — merge new fields into BOTH root attributes and technicalDetails
+                // (older products store tech details at root level of attributes)
                 const techDetails = { ...customFields };
+                const existingAttrs = (variantData?.attributes as any) || {};
                 const updatedAttrs = {
-                    ...(variantData?.attributes || {}),
-                    technicalDetails: { ...((variantData?.attributes as any)?.technicalDetails || {}), ...techDetails }
+                    ...existingAttrs,
+                    ...techDetails,
+                    technicalDetails: { ...(existingAttrs.technicalDetails || {}), ...techDetails },
+                    media: existingAttrs.media || {}
                 };
 
                 const { error: vErr } = await supabase.from('product_variants').update({
@@ -328,15 +332,29 @@ interface ProductModalProps {
 
                 if (vErr) throw new Error(vErr.message);
 
-                // Notify parent to update UI
+                // Notify parent to update UI with all properly-named Product fields
                 onUpdateProduct({
                     ...product,
                     name,
                     modelNumber,
                     description,
-                    price: Number(customPrice || 0),
+                    price: Number(customPrice || 0) || product.price,
                     image: customImage || product.image,
-                    ...techDetails
+                    bodyColor:     techDetails.bodyColor     !== undefined ? techDetails.bodyColor     : product.bodyColor,
+                    bladeType:     techDetails.bladeType     !== undefined ? techDetails.bladeType     : product.bladeType,
+                    sweep:         techDetails.sweep         !== undefined ? techDetails.sweep         : product.sweep,
+                    heightOfFan:   techDetails.heightOfFan   !== undefined ? techDetails.heightOfFan   : product.heightOfFan,
+                    motorSpec:     techDetails.motorSpec     !== undefined ? techDetails.motorSpec     : product.motorSpec,
+                    noOfBlades:    techDetails.noOfBlades    !== undefined ? techDetails.noOfBlades    : product.noOfBlades,
+                    bladeFinish:   techDetails.bladeFinish   !== undefined ? techDetails.bladeFinish   : product.bladeFinish,
+                    lightOption:   techDetails.lightOption   !== undefined ? techDetails.lightOption   : product.lightOption,
+                    airflow:       techDetails.airflow       !== undefined ? techDetails.airflow       : product.airflow,
+                    suitableFor:   techDetails.suitableFor   !== undefined ? techDetails.suitableFor   : product.suitableFor,
+                    remoteControl: techDetails.remoteControl !== undefined ? techDetails.remoteControl : product.remoteControl,
+                    size:          techDetails.size          !== undefined ? techDetails.size          : product.size,
+                    lamp:          techDetails.lamp          !== undefined ? techDetails.lamp          : product.lamp,
+                    finishing:     techDetails.finishing     !== undefined ? techDetails.finishing     : product.finishing,
+                    suitablePlace: techDetails.suitablePlace !== undefined ? techDetails.suitablePlace : product.suitablePlace,
                 });
 
                 setIsEditingCatalog(false);
