@@ -22,6 +22,12 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
     const [dateFilter, setDateFilter] = useState('');
     const [sortBy, setSortBy] = useState('date_desc');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, dateFilter, sortBy]);
 
     const isAdmin = currentUser === 'Admin' || currentUserRole === 'admin';
 
@@ -101,6 +107,13 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
 
         return result;
     }, [savedQuotes, searchQuery, dateFilter, sortBy]);
+
+    const totalPages = Math.ceil(filteredAndSortedQuotes.length / itemsPerPage);
+
+    const paginatedQuotes = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredAndSortedQuotes.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredAndSortedQuotes, currentPage]);
 
     return (
         <div className="max-w-6xl mx-auto px-4 pb-10">
@@ -203,7 +216,7 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
                 </div>
             ) : viewMode === 'list' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {filteredAndSortedQuotes.map(q => {
+                    {paginatedQuotes.map(q => {
                         const isOwner = canEdit(q);
                         const { finalAmount, totalDiscountAmount } = getQuoteStats(q);
                         return (
@@ -301,7 +314,7 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredAndSortedQuotes.map(q => {
+                                {paginatedQuotes.map(q => {
                                     const isOwner = canEdit(q);
                                     const { finalAmount, totalDiscountAmount } = getQuoteStats(q);
                                     return (
@@ -363,6 +376,56 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white px-6 py-4 rounded-xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <div className="text-sm font-semibold text-slate-500">
+                        Showing <span className="text-slate-800 font-bold">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredAndSortedQuotes.length)}</span> to <span className="text-slate-800 font-bold">{Math.min(currentPage * itemsPerPage, filteredAndSortedQuotes.length)}</span> of <span className="text-slate-800 font-bold">{filteredAndSortedQuotes.length}</span> quotes
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        {/* Prev Button */}
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all font-bold text-sm flex items-center justify-center min-w-[36px] h-9"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+
+                        {/* Page Numbers */}
+                        {Array.from({ length: totalPages }, (_, idx) => idx + 1).map(page => {
+                            const isSelected = page === currentPage;
+                            return (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-9 h-9 rounded-lg font-bold text-sm transition-all flex items-center justify-center
+                                        ${isSelected 
+                                            ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-100' 
+                                            : 'border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 hover:border-slate-300'
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            );
+                        })}
+
+                        {/* Next Button */}
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all font-bold text-sm flex items-center justify-center min-w-[36px] h-9"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             )}
