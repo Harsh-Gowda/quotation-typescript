@@ -79,22 +79,36 @@ interface ProductModalProps {
         const [description, setDescription] = useState(defaultDescription);
 
         React.useEffect(() => {
-            if (isCustom && (customCategory === 'Fan' || customCategory === 'Light')) {
-                const parts: string[] = [];
-                if (customCategory === 'Fan') {
-                    if (customFields.sweep) parts.push(`Sweep: ${customFields.sweep}`);
-                    if (customFields.motorSpec) parts.push(`Motor: ${customFields.motorSpec}`);
-                    if (customFields.noOfBlades) parts.push(`Blades: ${customFields.noOfBlades}`);
-                    if (customFields.bodyColor) parts.push(`Color: ${customFields.bodyColor}`);
-                    if (customFields.bladeFinish) parts.push(`Blade Finish: ${customFields.bladeFinish}`);
-                    if (customFields.lightOption) parts.push(`Light: ${customFields.lightOption}`);
-                    if (customFields.heightOfFan) parts.push(`Height: ${customFields.heightOfFan}`);
-                    if (customFields.airflow) parts.push(`Airflow: ${customFields.airflow}`);
-                } else if (customCategory === 'Light') {
-                    if (customFields.size) parts.push(`Size: ${customFields.size}`);
-                    if (customFields.lamp) parts.push(`Lamp: ${customFields.lamp}`);
-                    if (customFields.finishing) parts.push(`Finish: ${customFields.finishing}`);
-                    if (customFields.suitablePlace) parts.push(`Suitable Place: ${customFields.suitablePlace}`);
+            // For custom items: always auto-rebuild description from fields
+            // For catalog items in edit mode: also rebuild so user sees the updated tech details
+            const shouldRebuild = (isCustom && (customCategory === 'Fan' || customCategory === 'Light'))
+                || (isEditingCatalog && Object.keys(customFields).length > 0);
+
+            if (!shouldRebuild) return;
+
+            const parts: string[] = [];
+            const isFanContext = customCategory === 'Fan'
+                || (isEditingCatalog && (product.category === 'Fans' || product.category === 'Fan'));
+            const isLightContext = customCategory === 'Light'
+                || (isEditingCatalog && product.category === 'Lights');
+
+            if (isFanContext) {
+                if (customFields.bodyColor) parts.push(`Color: ${customFields.bodyColor}`);
+                if (customFields.bladeType) parts.push(`Blade Type: ${customFields.bladeType}`);
+                if (customFields.sweep) parts.push(`Sweep: ${customFields.sweep}`);
+                if (customFields.heightOfFan) parts.push(`Height: ${customFields.heightOfFan}`);
+                if (customFields.motorSpec) parts.push(`Motor: ${customFields.motorSpec}`);
+                if (customFields.noOfBlades) parts.push(`Blades: ${customFields.noOfBlades}`);
+                if (customFields.bladeFinish) parts.push(`Blade Finish: ${customFields.bladeFinish}`);
+                if (customFields.lightOption) parts.push(`Light: ${customFields.lightOption}`);
+                if (customFields.airflow) parts.push(`Airflow: ${customFields.airflow}`);
+                if (customFields.suitableFor) parts.push(`Suitable For: ${customFields.suitableFor}`);
+                if (customFields.remoteControl) parts.push(`Remote: ${customFields.remoteControl}`);
+            } else if (isLightContext) {
+                if (customFields.size) parts.push(`Size: ${customFields.size}`);
+                if (customFields.lamp) parts.push(`Lamp: ${customFields.lamp}`);
+                if (customFields.finishing) parts.push(`Finish: ${customFields.finishing}`);
+                if (customFields.suitablePlace) parts.push(`Suitable Place: ${customFields.suitablePlace}`);
                 }
                 setDescription(parts.join('\n'));
             }
