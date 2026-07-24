@@ -565,7 +565,22 @@ export default function ProductSelection({
                     ) : filteredProducts.length > 0 ? (
                         filteredProducts.map(p => {
                             const inCartQty = cart.filter(item => item.product.id === p.id).reduce((sum, item) => sum + item.quantity, 0);
-                            return <ProductCard key={p.id} product={p} onAddClick={() => setSelectedProduct(p)} inCartQty={inCartQty} />;
+                            return (
+                                <ProductCard 
+                                    key={p.id} 
+                                    product={p} 
+                                    onCardClick={() => setSelectedProduct(p)} 
+                                    onAddClick={(e) => {
+                                        const defaultOptions = {
+                                            size: sizeFilter === 'All' ? '' : sizeFilter,
+                                            color: colorFilter === 'All' ? '' : colorFilter,
+                                            lamp: finishingFilter === 'All' ? '' : finishingFilter,
+                                        };
+                                        addToCart(p, defaultOptions);
+                                    }}
+                                    inCartQty={inCartQty} 
+                                />
+                            );
                         })
                     ) : (
                         <div className="col-span-2 py-20 bg-white border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center p-8">
