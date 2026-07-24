@@ -15,9 +15,10 @@ interface QuotationSheetProps {
     onUpdateItemSetting?: (index: number, key: 'showLineart' | 'includeGst' | 'includeDiscount', value: boolean) => void;
     onReorderItems?: (fromIndex: number, toIndex: number) => void;
     onUpdateRoundOff?: (value: number) => void;
+    onUpdateLabels?: (labels: Record<string, string>) => void;
 }
 
-export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateRoundOff }: QuotationSheetProps) {
+export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateRoundOff, onUpdateLabels }: QuotationSheetProps) {
     const [editingField, setEditingField] = useState<string | null>(null);
     const [tempValue, setTempValue] = useState<string>('');
     const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -25,15 +26,19 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
     const [editingRoundOff, setEditingRoundOff] = useState(false);
     const [roundOffTemp, setRoundOffTemp] = useState('');
     const [labels, setLabels] = useState({
-        discount1: 'discount',
-        netTotal: 'Net Total',
-        netTotalInc: 'Net Total (Inc. 18% GST)',
-        discount2: 'discount',
-        balanceAmount: 'Balance Amount'
+        discount1: quote.customLabels?.discount1 || 'discount',
+        netTotal: quote.customLabels?.netTotal || 'Net Total',
+        netTotalInc: quote.customLabels?.netTotalInc || 'Net Total (Inc. 18% GST)',
+        discount2: quote.customLabels?.discount2 || 'discount',
+        balanceAmount: quote.customLabels?.balanceAmount || 'Balance Amount'
     });
 
     const updateLabel = (key: keyof typeof labels, value: string) => {
-        setLabels(prev => ({ ...prev, [key]: value }));
+        const newLabels = { ...labels, [key]: value };
+        setLabels(newLabels);
+        if (onUpdateLabels) {
+            onUpdateLabels(newLabels);
+        }
     };
 
     // Using shared utilities from utils.ts

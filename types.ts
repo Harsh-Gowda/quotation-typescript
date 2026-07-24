@@ -75,6 +75,7 @@ export interface Quotation {
   globalDiscountType?: 'include' | 'exclude';
   globalDiscountValue?: number;
   createdBy?: string;
+  customLabels?: Record<string, string>;
 }
 
 export type ViewState = 'CUSTOMER_ENTRY' | 'PRODUCT_SELECTION' | 'PREVIEW' | 'SAVED_QUOTES';
