@@ -24,6 +24,17 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
     const [editingRoundOff, setEditingRoundOff] = useState(false);
     const [roundOffTemp, setRoundOffTemp] = useState('');
+    const [labels, setLabels] = useState({
+        discount1: 'discount',
+        netTotal: 'Net Total',
+        netTotalInc: 'Net Total (Inc. 18% GST)',
+        discount2: 'discount',
+        balanceAmount: 'Balance Amount'
+    });
+
+    const updateLabel = (key: keyof typeof labels, value: string) => {
+        setLabels(prev => ({ ...prev, [key]: value }));
+    };
 
     // Using shared utilities from utils.ts
     const gstBase = computeGstBase(quote.items, quote.globalDiscountType, quote.globalDiscountValue);
@@ -433,24 +444,24 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     <>
                                         {/* EXCLUDE FLOW: Gross -> Discount -> Net -> GST -> Final */}
                                         {quote.globalDiscountValue ? (
-                                            <tr>
-                                                <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none outline-none focus:bg-slate-50">
-                                                    discount
+                                            <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                                <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('discount1', e.currentTarget.textContent || 'discount')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none outline-none focus:bg-slate-50">
+                                                    {labels.discount1}
                                                 </td>
                                                 <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-blue-600 leading-none">
                                                     - {totalDiscountAmount.toLocaleString('en-IN')}
                                                 </td>
                                             </tr>
                                         ) : null}
-                                        <tr>
-                                            <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none outline-none focus:bg-slate-50">
-                                                Net Total
+                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                            <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('netTotal', e.currentTarget.textContent || 'Net Total')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none outline-none focus:bg-slate-50">
+                                                {labels.netTotal}
                                             </td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
                                                 {(totalPrice(quote.items) - totalDiscountAmount).toLocaleString('en-IN')}
                                             </td>
                                         </tr>
-                                        <tr>
+                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                                             <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
                                                 {Math.round(gstBase * 0.18).toLocaleString('en-IN')}
@@ -459,18 +470,18 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                     </>
                                 ) : quote.globalDiscountType === 'include' ? (
                                     <>
-                                        <tr>
-                                            <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none outline-none focus:bg-slate-50">
-                                                Net Total (Inc. 18% GST)
+                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                            <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('netTotalInc', e.currentTarget.textContent || 'Net Total (Inc. 18% GST)')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none outline-none focus:bg-slate-50">
+                                                {labels.netTotalInc}
                                             </td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
                                                 {totalPrice(quote.items).toLocaleString('en-IN')}
                                             </td>
                                         </tr>
                                         {quote.globalDiscountValue ? (
-                                            <tr>
-                                                <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none outline-none focus:bg-slate-50">
-                                                    discount
+                                            <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                                <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('discount2', e.currentTarget.textContent || 'discount')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none outline-none focus:bg-slate-50">
+                                                    {labels.discount2}
                                                 </td>
                                                 <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-blue-600 leading-none">
                                                     - {totalDiscountAmount.toLocaleString('en-IN')}
@@ -481,7 +492,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 ) : (
                                     <>
                                         {/* DEFAULT FLOW (No discount): Gross -> GST -> Final */}
-                                        <tr>
+                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                                             <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
                                                 {Math.round(gstBase * 0.18).toLocaleString('en-IN')}
@@ -492,15 +503,16 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
                                 {quote.advanceAmount ? (
                                     <>
-                                        <tr>
+                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                                             <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">
                                                 Advance{quote.advanceDate ? ` (${formatAdvanceDate(quote.advanceDate)})` : ''}
                                             </td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{quote.advanceAmount.toLocaleString('en-IN')}</td>
                                         </tr>
-                                        <tr>
-                                            <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none outline-none focus:bg-slate-200">Balance Amount
-</td>
+                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                            <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('balanceAmount', e.currentTarget.textContent || 'Balance Amount')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none outline-none focus:bg-slate-200">
+                                                {labels.balanceAmount}
+                                            </td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                                 ₹{(() => {
                                                     const totalNoTax = totalPrice(quote.items);
@@ -513,9 +525,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         </tr>
                                     </>
                                 ) : (
-                                    <tr>
-                                        <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none outline-none focus:bg-slate-200">Balance Amount
-
+                                    <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                        <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('balanceAmount', e.currentTarget.textContent || 'Balance Amount')} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none outline-none focus:bg-slate-200">
+                                            {labels.balanceAmount}
                                         </td>
                                         <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
                                             ₹{(() => {
