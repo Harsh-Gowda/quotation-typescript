@@ -40,6 +40,7 @@ function fromRow(row: any): Quotation {
     globalDiscountType: row.global_discount_type || undefined,
     globalDiscountValue: row.global_discount_value || undefined,
     createdBy: row.created_by || undefined,
+    createdAt: row.created_at || undefined,
   };
 }
 

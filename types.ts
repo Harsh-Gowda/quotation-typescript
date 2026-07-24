@@ -76,6 +76,7 @@ export interface Quotation {
   globalDiscountValue?: number;
   createdBy?: string;
   customLabels?: Record<string, string>;
+  createdAt?: string;
 }
 
 export type ViewState = 'CUSTOMER_ENTRY' | 'PRODUCT_SELECTION' | 'PREVIEW' | 'SAVED_QUOTES';

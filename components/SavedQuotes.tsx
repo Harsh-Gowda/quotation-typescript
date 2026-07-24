@@ -84,8 +84,13 @@ export default function SavedQuotes({ savedQuotes, currentUser, currentUserRole,
             if (sortBy.startsWith('date')) {
                 const dateA = new Date(a.date).getTime();
                 const dateB = new Date(b.date).getTime();
-                // If dates are exactly the same (e.g. same day), fallback to ID sort
+                // If dates are exactly the same (e.g. same day), fallback to createdAt or ID sort
                 if (dateA === dateB) {
+                    if (a.createdAt && b.createdAt) {
+                        const timeA = new Date(a.createdAt).getTime();
+                        const timeB = new Date(b.createdAt).getTime();
+                        return sortBy === 'date_desc' ? timeB - timeA : timeA - timeB;
+                    }
                     return sortBy === 'date_desc' ? b.id.localeCompare(a.id) : a.id.localeCompare(b.id);
                 }
                 return sortBy === 'date_desc' ? dateB - dateA : dateA - dateB;
