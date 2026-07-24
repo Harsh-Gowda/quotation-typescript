@@ -18,6 +18,7 @@ interface QuotationPreviewProps {
     onUpdateItemSetting?: (index: number, key: 'showLineart' | 'includeGst' | 'includeDiscount', value: boolean) => void;
     onReorderItems?: (fromIndex: number, toIndex: number) => void;
     onUpdateRoundOff?: (value: number) => void;
+    onUpdateLabels?: (labels: Record<string, string>) => void;
     onNewQuote: () => void;
     isPublicMode: boolean;
     isCustomerView: boolean;
@@ -25,7 +26,7 @@ interface QuotationPreviewProps {
 }
 
 export default function QuotationPreview({
-    finalQuote, subtotal, isSaved, isSaving, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateRoundOff, onNewQuote,
+    finalQuote, subtotal, isSaved, isSaving, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateRoundOff, onUpdateLabels, onNewQuote,
     isPublicMode, isCustomerView, viewOnly
 }: QuotationPreviewProps) {
     const navigate = useNavigate();
@@ -190,6 +191,7 @@ export default function QuotationPreview({
                     onUpdateItemSetting={viewOnly ? undefined : onUpdateItemSetting}
                     onReorderItems={viewOnly ? undefined : onReorderItems}
                     onUpdateRoundOff={viewOnly ? undefined : onUpdateRoundOff}
+                    onUpdateLabels={viewOnly ? undefined : onUpdateLabels}
                 />
             </div>
         </div>

@@ -630,6 +630,12 @@ export default function App() {
     setIsSaved(false);
   };
 
+  const handleUpdateLabels = (labels: Record<string, string>) => {
+    if (!finalQuote) return;
+    setFinalQuote({ ...finalQuote, customLabels: labels });
+    setIsSaved(false);
+  };
+
   const saveToSupabase = async () => {
     if (!finalQuote || isSaving) return;
     setIsSaving(true);
@@ -915,15 +921,6 @@ export default function App() {
                 onUpdateItemSetting={handleUpdateItemSetting}
                 onReorderItems={handleReorderQuoteItems}
                 onUpdateRoundOff={handleUpdateRoundOff}
-                onNewQuote={() => {
-                  setCart([]);
-                  setCustomer({ name: '', email: '', phone: '', address: '', company: '' });
-                  setFinalQuote(null);
-                  setDiscountType(null);
-                  setDiscountValue(0);
-                  setIsEditMode(false);
-                  setEditingQuoteId(null);
-                  setIsViewOnly(false);
                   navigate('/');
                 }}
                 isPublicMode={isPublicMode}
