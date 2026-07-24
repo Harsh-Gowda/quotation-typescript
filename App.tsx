@@ -921,6 +921,16 @@ export default function App() {
                 onUpdateItemSetting={handleUpdateItemSetting}
                 onReorderItems={handleReorderQuoteItems}
                 onUpdateRoundOff={handleUpdateRoundOff}
+                onUpdateLabels={handleUpdateLabels}
+                onNewQuote={() => {
+                  setCart([]);
+                  setCustomer({ name: '', email: '', phone: '', address: '', company: '' });
+                  setFinalQuote(null);
+                  setDiscountType(null);
+                  setDiscountValue(0);
+                  setIsEditMode(false);
+                  setEditingQuoteId(null);
+                  setIsViewOnly(false);
                   navigate('/');
                 }}
                 isPublicMode={isPublicMode}
