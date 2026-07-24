@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Product } from '../types';
 import { CartIcon } from './Icons';
@@ -6,15 +5,16 @@ import { CartIcon } from './Icons';
 interface ProductCardProps {
     key?: any;
     product: Product;
-    onAddClick: () => void;
+    onCardClick: () => void;
+    onAddClick: (e: React.MouseEvent) => void;
     inCartQty?: number;
 }
 
-export default function ProductCard({ product, onAddClick, inCartQty = 0 }: ProductCardProps) {
+export default function ProductCard({ product, onCardClick, onAddClick, inCartQty = 0 }: ProductCardProps) {
     const hasImage = !!product.image;
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full group transition-all hover:shadow-md cursor-pointer" onClick={onAddClick}>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full group transition-all hover:shadow-md cursor-pointer" onClick={onCardClick}>
             <div className="relative h-64 overflow-hidden bg-white p-4 flex items-center justify-center border-b">
                 {hasImage ? (
                     <img src={product.image} alt={product.name} className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105" />
@@ -46,7 +46,13 @@ export default function ProductCard({ product, onAddClick, inCartQty = 0 }: Prod
                 <div className="mt-auto">
                     <div className="flex justify-between items-center">
                         <span className="text-xl font-bold text-indigo-700">₹{product.price.toLocaleString('en-IN')}</span>
-                        <div className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all active:scale-95 shadow-sm">
+                        <div 
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-all active:scale-95 shadow-sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAddClick(e);
+                            }}
+                        >
                             <CartIcon /> <span className="ml-2">Add</span>
                         </div>
                     </div>
