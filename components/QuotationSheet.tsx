@@ -1,14 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Quotation, QuoteItem, Customer } from '../types';
+import { totalPrice, discountableSubtotal, servicesSubtotal, computeGstBase, calculateTotalDiscount } from '../utils';
+import UPIScanner from './UPIScanner';
 
-/**
- * SketchImage: renders an image in grayscale/lineart mode via canvas
- * so that PDF exports (html2canvas) correctly capture the effect.
- * When showLineart is false, renders a normal <img>.
- */
-function SketchImage({ src, alt, className }: { src: string; alt: string; className: string; showLineart: boolean }) {
-    return <img src={src} alt={alt} className={className} />;
-}
 
 function SketchImageLineart({ src, alt, className }: { src: string; alt: string; className: string }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -49,10 +44,6 @@ function SketchImageLineart({ src, alt, className }: { src: string; alt: string;
 
     return <canvas ref={canvasRef} className={className} style={{ objectFit: 'contain' }} />;
 }
-import { Quotation, QuoteItem, Customer } from '../types';
-import { totalPrice, discountableSubtotal, servicesSubtotal, computeGstBase, calculateTotalDiscount } from '../utils';
-import UPIScanner from './UPIScanner';
-
 interface QuotationSheetProps {
     quote: Quotation;
     subtotal: number;
