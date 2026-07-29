@@ -1,5 +1,54 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
+/**
+ * SketchImage: renders an image in grayscale/lineart mode via canvas
+ * so that PDF exports (html2canvas) correctly capture the effect.
+ * When showLineart is false, renders a normal <img>.
+ */
+function SketchImage({ src, alt, className }: { src: string; alt: string; className: string; showLineart: boolean }) {
+    return <img src={src} alt={alt} className={className} />;
+}
+
+function SketchImageLineart({ src, alt, className }: { src: string; alt: string; className: string }) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        if (!canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                // Luminance formula weighted grayscale
+                const avg = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                // Apply contrast boost similar to CSS: contrast(1.8) brightness(1.2)
+                const boosted = Math.min(255, avg * 1.2);
+                const contrasted = Math.min(255, Math.max(0, (boosted - 128) * 1.8 + 128));
+                data[i] = contrasted;
+                data[i + 1] = contrasted;
+                data[i + 2] = contrasted;
+                // keep alpha: data[i+3] unchanged
+            }
+            ctx.putImageData(imageData, 0, 0);
+        };
+        img.onerror = () => {
+            // Fallback: draw normal image on error
+            ctx.drawImage(img, 0, 0);
+        };
+        img.src = src;
+    }, [src]);
+
+    return <canvas ref={canvasRef} className={className} style={{ objectFit: 'contain' }} />;
+}
 import { Quotation, QuoteItem, Customer } from '../types';
 import { totalPrice, discountableSubtotal, servicesSubtotal, computeGstBase, calculateTotalDiscount } from '../utils';
 import UPIScanner from './UPIScanner';
@@ -228,15 +277,19 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 <td className="border-[1.5px] border-slate-900 py-4 print:py-1 px-2 text-center">
                                     <div className="flex flex-col items-center justify-center space-y-2 print:space-y-0.5">
                                         {(i.customImage || i.product.image) ? (
-                                            <img
-                                                src={i.customImage || i.product.image}
-                                                className="w-24 h-24 print:w-12 print:h-12 object-contain transition-all duration-300"
-                                                alt={i.customName || i.product.name}
-                                                style={i.showLineart ? {
-                                                    filter: 'grayscale(1) contrast(1.8) brightness(1.2) invert(0)',
-                                                    opacity: 0.85
-                                                } : {}}
-                                            />
+                                            i.showLineart ? (
+                                                <SketchImageLineart
+                                                    src={i.customImage || i.product.image}
+                                                    alt={i.customName || i.product.name}
+                                                    className="w-24 h-24 print:w-12 print:h-12 object-contain transition-all duration-300"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src={i.customImage || i.product.image}
+                                                    className="w-24 h-24 print:w-12 print:h-12 object-contain transition-all duration-300"
+                                                    alt={i.customName || i.product.name}
+                                                />
+                                            )
                                         ) : (
                                             <div className="w-24 h-24 print:w-12 print:h-12 flex flex-col items-center justify-center bg-slate-100 rounded-lg border border-dashed border-slate-300">
                                                 <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -390,17 +443,27 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         {i.product.category !== 'Services' && (
                                             <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto flex flex-col items-center gap-2 p-2 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-[0_15px_40px_rgba(0,0,0,0.15)] z-[9999] print:hidden scale-95 group-hover:scale-100 origin-left after:content-[''] after:absolute after:-left-4 after:top-0 after:bottom-0 after:w-4 after:bg-transparent">
 
-                                                {/* Style Toggle */}
+                                                {/* Style Toggle: S=Sketch(lineart) mode, C=Color mode */}
                                                 <button
                                                     type="button"
                                                     onClick={() => onUpdateItemSetting?.(idx, 'showLineart', !i.showLineart)}
-                                                    className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex items-center justify-center border shadow-sm ${i.showLineart
+                                                    className={`w-9 h-9 rounded-xl text-[9px] font-black transition-all flex flex-col items-center justify-center border shadow-sm ${i.showLineart
                                                         ? 'bg-purple-600 text-white border-purple-700'
                                                         : 'bg-white text-purple-600 border-purple-100 hover:bg-purple-50'
                                                         }`}
-                                                    title="Toggle Style"
+                                                    title={i.showLineart ? 'Switch to Color Image' : 'Switch to Sketch/Lineart'}
                                                 >
-                                                    {i.showLineart ? 'L' : 'S'}
+                                                    {i.showLineart ? (
+                                                        <>
+                                                            <span className="leading-none">✏️</span>
+                                                            <span className="text-[7px] mt-0.5">SKTCH</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <span className="leading-none">🌈</span>
+                                                            <span className="text-[7px] mt-0.5">COLOR</span>
+                                                        </>
+                                                    )}
                                                 </button>
 
                                                 {/* Discount Toggle */}
