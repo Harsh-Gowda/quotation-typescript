@@ -91,9 +91,15 @@ export default function App() {
   });
 
   // Edit Mode State
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
-  const [isViewOnly, setIsViewOnly] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(() => {
+    return localStorage.getItem(`${DRAFT_STORAGE_KEY}_isEditMode`) === 'true';
+  });
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(() => {
+    return localStorage.getItem(`${DRAFT_STORAGE_KEY}_editingQuoteId`);
+  });
+  const [isViewOnly, setIsViewOnly] = useState(() => {
+    return localStorage.getItem(`${DRAFT_STORAGE_KEY}_isViewOnly`) === 'true';
+  });
 
   // Load saved quotations from Supabase on mount
   const loadQuotations = useCallback(async () => {
@@ -118,7 +124,14 @@ export default function App() {
     localStorage.setItem(`${DRAFT_STORAGE_KEY}_cart`, JSON.stringify(cart));
     localStorage.setItem(`${DRAFT_STORAGE_KEY}_discountType`, discountType || '');
     localStorage.setItem(`${DRAFT_STORAGE_KEY}_discountValue`, String(discountValue));
-  }, [customer, cart, discountType, discountValue]);
+    localStorage.setItem(`${DRAFT_STORAGE_KEY}_isEditMode`, String(isEditMode));
+    if (editingQuoteId) {
+      localStorage.setItem(`${DRAFT_STORAGE_KEY}_editingQuoteId`, editingQuoteId);
+    } else {
+      localStorage.removeItem(`${DRAFT_STORAGE_KEY}_editingQuoteId`);
+    }
+    localStorage.setItem(`${DRAFT_STORAGE_KEY}_isViewOnly`, String(isViewOnly));
+  }, [customer, cart, discountType, discountValue, isEditMode, editingQuoteId, isViewOnly]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -256,6 +269,9 @@ export default function App() {
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_cart`);
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountType`);
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountValue`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_isEditMode`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_editingQuoteId`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_isViewOnly`);
   };
 
   /** Called by ProductModal after an image is successfully saved to Supabase.
@@ -520,12 +536,30 @@ export default function App() {
     return `${prefix}-${formattedCounter}-${disc}${gstSuffix}`;
   };
 
+  const getUpdatedEditId = (oldId: string): string => {
+    // oldId format: PREFIX-COUNTER-DISCOUNT[-F] (e.g. MKI-01-20 or MKI-01-20-F)
+    const parts = oldId.split('-');
+    if (parts.length >= 3) {
+      const prefix = parts[0];
+      const counter = parts[1]; // Keep the counter part exactly as it was
+      const disc = Math.round(discountValue || 0);
+      const gstSuffix = discountType === 'include' ? '-F' : '';
+      return `${prefix}-${counter}-${disc}${gstSuffix}`;
+    }
+    // Fallback if format is not recognized
+    return oldId;
+  };
+
   const handleCreateQuotation = async () => {
     setIsGenerating(true);
     const aiSummary = "Professional Quotation";
 
+    const newId = isEditMode && editingQuoteId 
+      ? getUpdatedEditId(editingQuoteId) 
+      : generateQuotationId();
+
     const quote: Quotation = {
-      id: isEditMode && editingQuoteId ? editingQuoteId : generateQuotationId(),
+      id: newId,
       customer,
       items: cart,
       date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
@@ -643,12 +677,28 @@ export default function App() {
     try {
       await saveQuotation(finalQuote);
 
+      // If the ID changed during edit mode, delete the old one from DB
+      if (isEditMode && editingQuoteId && editingQuoteId !== finalQuote.id) {
+        try {
+          await deleteQuotation(editingQuoteId);
+        } catch (e) {
+          console.error("Failed to delete old quotation ID", e);
+        }
+      }
+
       // Update local state optimistically
-      let newList: Quotation[];
-      if (isEditMode && editingQuoteId) {
-        newList = savedQuotes.map(q => q.id === editingQuoteId ? finalQuote : q);
+      let newList = [...savedQuotes];
+      
+      // Remove old ID if it changed
+      if (isEditMode && editingQuoteId && editingQuoteId !== finalQuote.id) {
+        newList = newList.filter(q => q.id !== editingQuoteId);
+      }
+      
+      const existsIndex = newList.findIndex(q => q.id === finalQuote.id);
+      if (existsIndex >= 0) {
+        newList[existsIndex] = finalQuote;
       } else {
-        newList = [finalQuote, ...savedQuotes];
+        newList = [finalQuote, ...newList];
       }
       setSavedQuotes(newList);
       setIsSaved(true);
