@@ -513,17 +513,17 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             </tr>
                                         ) : null}
                                         <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
+                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
+                                                {Math.round(gstBase * 0.18).toLocaleString('en-IN')}
+                                            </td>
+                                        </tr>
+                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                                             <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('netTotal', e.currentTarget.textContent || 'Net Total')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none outline-none focus:bg-slate-50">
                                                 {labels.netTotal}
                                             </td>
                                             <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
                                                 {(totalPrice(quote.items) - totalDiscountAmount).toLocaleString('en-IN')}
-                                            </td>
-                                        </tr>
-                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
-                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
-                                                {Math.round(gstBase * 0.18).toLocaleString('en-IN')}
                                             </td>
                                         </tr>
                                     </>
@@ -802,13 +802,13 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                             <span className="font-bold">-{totalDiscountAmount.toLocaleString('en-IN')}</span>
                                         </div>
                                     ) : null}
-                                    <div className="flex justify-between border-t border-slate-700 pt-1">
-                                        <span className="text-slate-300">Net Total</span>
-                                        <span className="font-bold">{(totalPrice(quote.items) - totalDiscountAmount).toLocaleString('en-IN')}</span>
-                                    </div>
                                     <div className="flex justify-between">
                                         <span className="text-slate-400">GST @18%</span>
                                         <span className="font-bold">{Math.round(gstBase * 0.18).toLocaleString('en-IN')}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-slate-700 pt-1">
+                                        <span className="text-slate-300">Net Total</span>
+                                        <span className="font-bold">{(totalPrice(quote.items) - totalDiscountAmount).toLocaleString('en-IN')}</span>
                                     </div>
                                 </>
                             ) : (
