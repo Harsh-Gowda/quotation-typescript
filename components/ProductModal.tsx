@@ -177,7 +177,6 @@ interface ProductModalProps {
                 const publicUrl = urlData.publicUrl;
 
                 // 3. Update product_variants attributes.media.primaryImage in DB
-                // Skip if it's a service (like fan-installation) or a custom item
                 if (product.id !== 'custom-item' && product.category !== 'Services' && product.id !== 'fan-installation') {
                     // First fetch existing attributes
                     const { data: variantData, error: fetchErr } = await supabase
@@ -186,7 +185,8 @@ interface ProductModalProps {
                         .eq('variantId', product.id)
                         .single();
 
-                    if (!fetchErr && variantData) {
+                    if (fetchErr) throw fetchErr;
+                    if (variantData) {
                         const existingAttrs = variantData.attributes || {};
                         const updatedAttrs = {
                             ...existingAttrs,
@@ -197,27 +197,25 @@ interface ProductModalProps {
                             }
                         };
 
-                        await supabase
+                        const { error: updateErr } = await supabase
                             .from('product_variants')
                             .update({ attributes: updatedAttrs })
                             .eq('variantId', product.id);
+                        
+                        if (updateErr) throw updateErr;
                     }
-                } else if (isEditable || product.category === 'Services') {
-                    // For custom items not yet in DB, we just keep the URL in state
-                    // and it will be saved to the QuoteItem or permanently if "savePermanently" is checked
                 }
 
                 // 4. Swap local blob URL for permanent public URL
                 setCustomImage(publicUrl);
                 setUploadSuccess(true);
-                // Notify parent to refresh product list
                 onImageSaved?.(product.id, publicUrl);
 
             } catch (err: any) {
                 setUploadError(err.message || 'Upload failed');
-                // Keep local preview so user can still add to quote
             } finally {
                 setIsUploading(false);
+                if (e.target) e.target.value = '';
             }
         };
 

@@ -281,13 +281,18 @@ export default function App() {
     setProducts(prev =>
       prev.map(p => p.id === productId ? { ...p, image: newImageUrl } : p)
     );
-    // Also update any cart items referencing this product
+    // Update matching cart items: set the permanent URL on product.image and
+    // clear customImage (blob URL) since product.image now holds the real URL.
     setCart(prev =>
-      prev.map(item =>
-        item.product.id === productId
-          ? { ...item, product: { ...item.product, image: newImageUrl }, customImage: undefined }
-          : item
-      )
+      prev.map(item => {
+        if (item.product.id !== productId) return item;
+        return {
+          ...item,
+          product: { ...item.product, image: newImageUrl },
+          // Only clear customImage if it was a blob URL (not a permanent Supabase URL)
+          customImage: item.customImage?.startsWith('blob:') ? undefined : item.customImage,
+        };
+      })
     );
   };
 
@@ -675,7 +680,18 @@ export default function App() {
     setIsSaving(true);
 
     try {
-      await saveQuotation(finalQuote);
+      // Strip blob:// URLs from customImage before saving — blob URLs die on page reload.
+      // Catalog products always have image on product.image; custom items uploaded to Storage
+      // will have a real https:// URL. Only blob:// (local preview) should be cleared.
+      const sanitizedQuote = {
+        ...finalQuote,
+        items: finalQuote.items.map(item => ({
+          ...item,
+          customImage: item.customImage?.startsWith('blob:') ? undefined : item.customImage,
+        })),
+      };
+
+      await saveQuotation(sanitizedQuote);
 
       // If the ID changed during edit mode, delete the old one from DB
       if (isEditMode && editingQuoteId && editingQuoteId !== finalQuote.id) {
