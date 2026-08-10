@@ -500,45 +500,69 @@ export default function App() {
     });
   };
 
-  // Generate quotation ID in format: PREFIX-COUNTER-DISCOUNT (e.g. MKI-01-20)
-  // PREFIX is 'M' + uppercase first two letters of user's name (e.g., MKI for Kiran).
-  // COUNTER is a sequential number padded to 2 digits.
+  // Generate quotation ID in format: PREFIX-COUNTER-DISCOUNT[-F] (e.g. MSHA-01-12-F)
+  // PREFIX is 'M' + uppercase first three letters of user's name (e.g., MSHA for Sharmila).
+  // COUNTER is today's daily sequential number padded to 2 digits — resets each day.
   // DISCOUNT is the current global discount percentage.
-  // Uses savedQuotes from Supabase to determine counter (avoids localStorage dependency)
+  // If the generated ID already exists (same number, different customer), a letter
+  // suffix (a, b, c…) is appended so that no quotation is ever overwritten.
   const generateQuotationId = (): string => {
     const userName = loggedInUser?.name || 'USR';
     const prefix = 'M' + userName.substring(0, 3).toUpperCase();
+    const disc = Math.round(discountValue || 0);
+    const gstSuffix = discountType === 'include' ? '-F' : '';
 
-    // Find all saved quotes starting with the user's prefix
-    const userQuotes = savedQuotes.filter(q => q.id.startsWith(`${prefix}-`));
+    // Build today's date string in DDMMYY format (e.g. 100826 for 10 Aug 2026)
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yy = String(now.getFullYear()).slice(-2);
+    const todayStr = `${dd}${mm}${yy}`; // e.g. "100826"
+
+    // Only count quotes created TODAY by this user
+    // A quote is "today's" if its createdAt date matches today, OR if its ID
+    // already contains this user's prefix and today's date-slot counter pattern.
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayUserQuotes = savedQuotes.filter(q => {
+      if (!q.id.startsWith(`${prefix}-`)) return false;
+      // If createdAt is available, use it for a precise date comparison
+      if (q.createdAt) {
+        const createdDate = new Date(q.createdAt);
+        return createdDate >= todayStart;
+      }
+      // Fallback: check if the date field (human-readable) matches today
+      const todayHuman = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+      return q.date === todayHuman;
+    });
+
+    // Find the highest daily counter used today
     let maxCounter = 0;
-    userQuotes.forEach(q => {
+    todayUserQuotes.forEach(q => {
       const parts = q.id.split('-');
-      if (parts.length === 3) {
-        // parts[0] is prefix (e.g. MKI)
-        // parts[1] is legacy date (e.g. 260519) or new format counter (e.g. 01)
-        // parts[2] is legacy counter (e.g. 1) or new format discount (e.g. 20)
-        
-        // If legacy date (6 characters): the counter is parts[2]
-        if (parts[1].length === 6) {
-          const num = parseInt(parts[2], 10);
-          if (!isNaN(num) && num > maxCounter) maxCounter = num;
-        } 
-        // If new format counter (2 characters): the counter is parts[1]
-        else if (parts[1].length === 2 || parts[1].length === 1) {
-          const num = parseInt(parts[1], 10);
-          if (!isNaN(num) && num > maxCounter) maxCounter = num;
-        }
+      // parts[0] = prefix, parts[1] = counter (01, 02…), rest = discount/suffix
+      if (parts.length >= 3) {
+        // Strip any letter suffix (e.g. '03a' → 3)
+        const num = parseInt(parts[1], 10);
+        if (!isNaN(num) && num > maxCounter) maxCounter = num;
       }
     });
 
     const counter = maxCounter + 1;
     const formattedCounter = String(counter).padStart(2, '0');
-    const disc = Math.round(discountValue || 0);
-    // Append -F suffix when GST is included in prices
-    const gstSuffix = discountType === 'include' ? '-F' : '';
+    const baseId = `${prefix}-${formattedCounter}-${disc}${gstSuffix}`;
 
-    return `${prefix}-${formattedCounter}-${disc}${gstSuffix}`;
+    // Collision guard: if this exact ID already exists, append a letter (a, b, c…)
+    const allIds = new Set(savedQuotes.map(q => q.id));
+    if (!allIds.has(baseId)) return baseId;
+
+    const letters = 'abcdefghijklmnopqrstuvwxyz';
+    for (const letter of letters) {
+      const candidate = `${baseId}${letter}`;
+      if (!allIds.has(candidate)) return candidate;
+    }
+
+    // Extremely unlikely fallback
+    return `${baseId}-${Date.now()}`;
   };
 
   const getUpdatedEditId = (oldId: string): string => {
