@@ -641,12 +641,11 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             </tr>
                         )}
 
-                        {!isCustomerView && (
-                            <>
+                    </tbody>
+                </table>
 
-
-                                {/* GST always shown: applies to net discountable amount + full services amount */}
-                                {quote.globalDiscountType === 'exclude' ? (
+                {/* Mobile Card View (Hidden on Desktop & Print) */}
+                <div className="md:hidden print:hidden space-y-6 mb-8">
                                     <>
                                         {/* EXCLUDE FLOW: Gross -> Discount -> Net -> GST -> Final */}
                                         {quote.globalDiscountValue ? (
