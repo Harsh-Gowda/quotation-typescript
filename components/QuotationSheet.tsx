@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Quotation, QuoteItem, Customer } from '../types';
-import { totalPrice, discountableSubtotal, servicesSubtotal, computeGstBase, calculateTotalDiscount } from '../utils';
+import { Quotation, QuoteItem, Customer, SummaryRow } from '../types';
 import UPIScanner from './UPIScanner';
 
 
@@ -54,36 +53,54 @@ interface QuotationSheetProps {
     onUpdateItemPlace?: (index: number, placeName: string) => void;
     onUpdateItemSetting?: (index: number, key: 'showLineart' | 'includeGst' | 'includeDiscount', value: boolean) => void;
     onReorderItems?: (fromIndex: number, toIndex: number) => void;
-    onUpdateRoundOff?: (value: number) => void;
-    onUpdateLabels?: (labels: Record<string, string>) => void;
+    onUpdateSummaryRows?: (rows: SummaryRow[]) => void;
 }
 
-export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateRoundOff, onUpdateLabels }: QuotationSheetProps) {
+// Preset color swatches for summary row styling
+const SUMMARY_ROW_COLORS = [
+    { label: 'Black', value: '#0f172a' },
+    { label: 'Indigo', value: '#3730a3' },
+    { label: 'Blue', value: '#1d4ed8' },
+    { label: 'Green', value: '#166534' },
+    { label: 'Red', value: '#b91c1c' },
+    { label: 'Slate', value: '#475569' },
+];
+
+export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateSummaryRows }: QuotationSheetProps) {
     const [editingField, setEditingField] = useState<string | null>(null);
     const [tempValue, setTempValue] = useState<string>('');
     const [dragIndex, setDragIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-    const [editingRoundOff, setEditingRoundOff] = useState(false);
-    const [roundOffTemp, setRoundOffTemp] = useState('');
-    const [labels, setLabels] = useState({
-        discount1: quote.customLabels?.discount1 || 'discount',
-        netTotal: quote.customLabels?.netTotal || 'Net Total',
-        netTotalInc: quote.customLabels?.netTotalInc || 'Net Total (Inc. 18% GST)',
-        discount2: quote.customLabels?.discount2 || 'discount',
-        balanceAmount: quote.customLabels?.balanceAmount || 'Balance Amount'
-    });
+    const [summaryRows, setSummaryRows] = useState<SummaryRow[]>(quote.summaryRows ?? []);
+    const [activeSummaryPanel, setActiveSummaryPanel] = useState<string | null>(null);
 
-    const updateLabel = (key: keyof typeof labels, value: string) => {
-        const newLabels = { ...labels, [key]: value };
-        setLabels(newLabels);
-        if (onUpdateLabels) {
-            onUpdateLabels(newLabels);
-        }
+    const updateSummaryRows = (rows: SummaryRow[]) => {
+        setSummaryRows(rows);
+        onUpdateSummaryRows?.(rows);
     };
 
-    // Using shared utilities from utils.ts
-    const gstBase = computeGstBase(quote.items, quote.globalDiscountType, quote.globalDiscountValue);
-    const totalDiscountAmount = calculateTotalDiscount(quote.items, quote.globalDiscountType, quote.globalDiscountValue);
+    const addSummaryRow = () => {
+        const newRow: SummaryRow = {
+            id: `row-${Date.now()}`,
+            label: '',
+            value: '',
+            bold: false,
+            thin: false,
+            color: '#0f172a',
+        };
+        const updated = [...summaryRows, newRow];
+        updateSummaryRows(updated);
+    };
+
+    const updateSummaryRow = (id: string, changes: Partial<SummaryRow>) => {
+        const updated = summaryRows.map(r => r.id === id ? { ...r, ...changes } : r);
+        updateSummaryRows(updated);
+    };
+
+    const deleteSummaryRow = (id: string) => {
+        const updated = summaryRows.filter(r => r.id !== id);
+        updateSummaryRows(updated);
+    };
 
     const startEdit = (field: string, currentValue: string | number) => {
         if (!isEditable) return;
@@ -493,6 +510,136 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                 )}
                             </tr>
                         ))}
+
+                        {/* Manual Summary Rows */}
+                        {summaryRows.map((row) => (
+                            <tr key={row.id} className="group/summaryrow relative" onClick={() => setActiveSummaryPanel(activeSummaryPanel === row.id ? null : row.id)}>
+                                <td
+                                    colSpan={7}
+                                    className="border-[1.5px] border-slate-900 py-2 px-4 text-right leading-none relative"
+                                >
+                                    {/* Style Panel — appears on hover/click when editable */}
+                                    {isEditable && (
+                                        <div
+                                            className={`absolute right-[calc(100%+6px)] top-1/2 -translate-y-1/2 flex flex-row items-center gap-1.5 p-1.5 bg-white/98 backdrop-blur-md rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-[9999] print:hidden transition-all duration-200 ${
+                                                activeSummaryPanel === row.id
+                                                    ? 'opacity-100 pointer-events-auto scale-100'
+                                                    : 'opacity-0 pointer-events-none scale-95 group-hover/summaryrow:opacity-100 group-hover/summaryrow:pointer-events-auto group-hover/summaryrow:scale-100'
+                                            }`}
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            {/* Color Swatches */}
+                                            {SUMMARY_ROW_COLORS.map(c => (
+                                                <button
+                                                    key={c.value}
+                                                    type="button"
+                                                    title={c.label}
+                                                    onClick={() => updateSummaryRow(row.id, { color: c.value })}
+                                                    className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 flex-shrink-0 ${
+                                                        row.color === c.value ? 'border-slate-900 scale-110' : 'border-white shadow-sm'
+                                                    }`}
+                                                    style={{ backgroundColor: c.value }}
+                                                />
+                                            ))}
+
+                                            {/* Divider */}
+                                            <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
+
+                                            {/* Bold Toggle */}
+                                            <button
+                                                type="button"
+                                                title="Bold"
+                                                onClick={() => updateSummaryRow(row.id, { bold: !row.bold, thin: false })}
+                                                className={`w-7 h-7 rounded-lg text-[11px] font-black transition-all flex items-center justify-center border ${
+                                                    row.bold
+                                                        ? 'bg-slate-900 text-white border-slate-900'
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                B
+                                            </button>
+
+                                            {/* Thin Toggle */}
+                                            <button
+                                                type="button"
+                                                title="Thin / Light"
+                                                onClick={() => updateSummaryRow(row.id, { thin: !row.thin, bold: false })}
+                                                className={`w-7 h-7 rounded-lg text-[11px] transition-all flex items-center justify-center border ${
+                                                    row.thin
+                                                        ? 'bg-slate-200 text-slate-700 border-slate-300'
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                                }`}
+                                                style={{ fontWeight: 300 }}
+                                            >
+                                                T
+                                            </button>
+
+                                            {/* Delete */}
+                                            <button
+                                                type="button"
+                                                title="Delete row"
+                                                onClick={() => { deleteSummaryRow(row.id); setActiveSummaryPanel(null); }}
+                                                className="w-7 h-7 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center border bg-red-50 text-red-500 border-red-200 hover:bg-red-100"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Label Input */}
+                                    <input
+                                        type="text"
+                                        value={row.label}
+                                        onChange={e => updateSummaryRow(row.id, { label: e.target.value })}
+                                        placeholder="Label..."
+                                        className="bg-transparent border-none outline-none text-right w-full uppercase tracking-wide"
+                                        style={{
+                                            fontSize: '11px',
+                                            color: row.color || '#0f172a',
+                                            fontWeight: row.bold ? 900 : row.thin ? 300 : 700,
+                                            cursor: isEditable ? 'text' : 'default',
+                                            pointerEvents: isEditable ? 'auto' : 'none',
+                                        }}
+                                        readOnly={!isEditable}
+                                        onClick={e => e.stopPropagation()}
+                                    />
+                                </td>
+                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center leading-none">
+                                    <input
+                                        type="text"
+                                        value={row.value}
+                                        onChange={e => updateSummaryRow(row.id, { value: e.target.value })}
+                                        placeholder="Value..."
+                                        className="bg-transparent border-none outline-none text-center w-full"
+                                        style={{
+                                            fontSize: '12px',
+                                            color: row.color || '#0f172a',
+                                            fontWeight: row.bold ? 900 : row.thin ? 300 : 700,
+                                            cursor: isEditable ? 'text' : 'default',
+                                            pointerEvents: isEditable ? 'auto' : 'none',
+                                        }}
+                                        readOnly={!isEditable}
+                                        onClick={e => e.stopPropagation()}
+                                    />
+                                </td>
+                            </tr>
+                        ))}
+
+                        {/* + Add Row Button */}
+                        {isEditable && (
+                            <tr className="print:hidden">
+                                <td colSpan={8} className="border-[1.5px] border-slate-900 py-2 px-4 text-center">
+                                    <button
+                                        type="button"
+                                        onClick={addSummaryRow}
+                                        className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors px-3 py-1 rounded-lg hover:bg-indigo-50 border border-dashed border-indigo-300 hover:border-indigo-500"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                                        Add Row
+                                    </button>
+                                </td>
+                            </tr>
+                        )}
 
                         {!isCustomerView && (
                             <>

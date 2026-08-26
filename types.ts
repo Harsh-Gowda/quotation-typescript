@@ -1,4 +1,13 @@
 
+export interface SummaryRow {
+  id: string;
+  label: string;
+  value: string;
+  bold?: boolean;
+  thin?: boolean;
+  color?: string;
+}
+
 export interface Customer {
   name: string;
   email: string;
@@ -77,6 +86,7 @@ export interface Quotation {
   createdBy?: string;
   customLabels?: Record<string, string>;
   createdAt?: string;
+  summaryRows?: SummaryRow[];
 }
 
 export type ViewState = 'CUSTOMER_ENTRY' | 'PRODUCT_SELECTION' | 'PREVIEW' | 'SAVED_QUOTES';
