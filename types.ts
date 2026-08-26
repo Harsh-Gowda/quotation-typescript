@@ -4,8 +4,9 @@ export interface SummaryRow {
   label: string;
   value: string;
   bold?: boolean;
-  thin?: boolean;
+  semiBold?: boolean;
   color?: string;
+  scannerAmount?: boolean;
 }
 
 export interface Customer {

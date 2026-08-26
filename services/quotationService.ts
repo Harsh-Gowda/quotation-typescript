@@ -19,6 +19,8 @@ function toRow(q: Quotation) {
     global_discount_type: q.globalDiscountType || null,
     global_discount_value: q.globalDiscountValue || null,
     created_by: q.createdBy || null,
+    custom_labels: q.customLabels || null,
+    summary_rows: q.summaryRows || null,
   };
 }
 
@@ -41,6 +43,8 @@ function fromRow(row: any): Quotation {
     globalDiscountValue: row.global_discount_value || undefined,
     createdBy: row.created_by || undefined,
     createdAt: row.created_at || undefined,
+    customLabels: row.custom_labels || undefined,
+    summaryRows: row.summary_rows || undefined,
   };
 }
 

@@ -56,14 +56,11 @@ interface QuotationSheetProps {
     onUpdateSummaryRows?: (rows: SummaryRow[]) => void;
 }
 
-// Preset color swatches for summary row styling
+// Preset color swatches for summary row styling — 3 only
 const SUMMARY_ROW_COLORS = [
     { label: 'Black', value: '#0f172a' },
-    { label: 'Indigo', value: '#3730a3' },
-    { label: 'Blue', value: '#1d4ed8' },
-    { label: 'Green', value: '#166534' },
-    { label: 'Red', value: '#b91c1c' },
-    { label: 'Slate', value: '#475569' },
+    { label: 'Blue',  value: '#1d4ed8' },
+    { label: 'Red',   value: '#dc2626' },
 ];
 
 export default function QuotationSheet({ quote, subtotal, isCustomerView, isEditable, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateSummaryRows }: QuotationSheetProps) {
@@ -85,8 +82,9 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
             label: '',
             value: '',
             bold: false,
-            thin: false,
+            semiBold: false,
             color: '#0f172a',
+            scannerAmount: false,
         };
         const updated = [...summaryRows, newRow];
         updateSummaryRows(updated);
@@ -512,16 +510,99 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                         ))}
 
                         {/* Manual Summary Rows */}
-                        {summaryRows.map((row) => (
-                            <tr key={row.id} className="group/summaryrow relative" onClick={() => setActiveSummaryPanel(activeSummaryPanel === row.id ? null : row.id)}>
+                        {summaryRows.map((row, rowIdx) => {
+                            const fw = row.bold ? 900 : row.semiBold ? 600 : 400;
+                            const isEmpty = !row.label.trim() && !row.value.trim();
+                            const isDragging = dragIndex === rowIdx;
+                            const isDragOver = dragOverIndex === rowIdx;
+                            return (
+                            <tr
+                                key={row.id}
+                                className={`group/summaryrow relative transition-opacity ${isDragging ? 'opacity-40' : 'opacity-100'} ${isDragOver ? 'outline outline-2 outline-indigo-400' : ''}`}
+                                draggable={isEditable}
+                                onDragStart={() => setDragIndex(rowIdx)}
+                                onDragOver={e => { e.preventDefault(); setDragOverIndex(rowIdx); }}
+                                onDrop={() => {
+                                    if (dragIndex === null || dragIndex === rowIdx) { setDragIndex(null); setDragOverIndex(null); return; }
+                                    const reordered = [...summaryRows];
+                                    const [moved] = reordered.splice(dragIndex, 1);
+                                    reordered.splice(rowIdx, 0, moved);
+                                    updateSummaryRows(reordered);
+                                    setDragIndex(null);
+                                    setDragOverIndex(null);
+                                }}
+                                onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
+                                onClick={() => setActiveSummaryPanel(activeSummaryPanel === row.id ? null : row.id)}
+                                {...(isEmpty ? { 'data-html2canvas-ignore': 'true' } : {})}
+                            >
+                                {/* Label cell */}
                                 <td
                                     colSpan={7}
-                                    className="border-[1.5px] border-slate-900 py-2 px-4 text-right leading-none relative"
+                                    className="border-[1.5px] border-slate-900 py-2 px-4 text-right leading-none relative overflow-visible"
                                 >
-                                    {/* Style Panel — appears on hover/click when editable */}
+                                    {/* Drag handle — html2canvas ignored */}
+                                    {isEditable && (
+                                        <span
+                                            data-html2canvas-ignore="true"
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 select-none"
+                                            title="Drag to reorder"
+                                        >
+                                            ⠿
+                                        </span>
+                                    )}
+
+                                    {/* Visible text for html2canvas (PDF) */}
+                                    <span
+                                        className="block text-right w-full uppercase tracking-wide select-none pointer-events-none"
+                                        style={{ fontSize: '11px', color: row.color || '#0f172a', fontWeight: fw, minHeight: '1em' }}
+                                    >
+                                        {row.label || ''}
+                                    </span>
+
+                                    {/* Editable input overlay — ignored by html2canvas */}
+                                    {isEditable && (
+                                        <input
+                                            data-html2canvas-ignore="true"
+                                            type="text"
+                                            value={row.label}
+                                            onChange={e => updateSummaryRow(row.id, { label: e.target.value })}
+                                            placeholder="Label..."
+                                            className="absolute inset-0 bg-transparent border-none outline-none text-right w-full uppercase tracking-wide px-4"
+                                            style={{ fontSize: '11px', color: row.color || '#0f172a', fontWeight: fw }}
+                                            onClick={e => e.stopPropagation()}
+                                        />
+                                    )}
+                                </td>
+
+                                {/* Value cell */}
+                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center leading-none relative overflow-visible">
+                                    {/* Visible text for html2canvas (PDF) */}
+                                    <span
+                                        className="block text-center w-full select-none pointer-events-none"
+                                        style={{ fontSize: '12px', color: row.color || '#0f172a', fontWeight: fw, minHeight: '1em' }}
+                                    >
+                                        {row.value || ''}
+                                    </span>
+
+                                    {/* Editable input overlay — ignored by html2canvas */}
+                                    {isEditable && (
+                                        <input
+                                            data-html2canvas-ignore="true"
+                                            type="text"
+                                            value={row.value}
+                                            onChange={e => updateSummaryRow(row.id, { value: e.target.value })}
+                                            placeholder="Value..."
+                                            className="absolute inset-0 bg-transparent border-none outline-none text-center w-full px-2"
+                                            style={{ fontSize: '12px', color: row.color || '#0f172a', fontWeight: fw }}
+                                            onClick={e => e.stopPropagation()}
+                                        />
+                                    )}
+
+                                    {/* Style Panel — floats RIGHT, fully ignored by html2canvas */}
                                     {isEditable && (
                                         <div
-                                            className={`absolute right-[calc(100%+6px)] top-1/2 -translate-y-1/2 flex flex-row items-center gap-1.5 p-1.5 bg-white/98 backdrop-blur-md rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-[9999] print:hidden transition-all duration-200 ${
+                                            data-html2canvas-ignore="true"
+                                            className={`absolute left-[calc(100%+6px)] top-1/2 -translate-y-1/2 flex flex-row items-center gap-1.5 p-1.5 bg-white backdrop-blur-md rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.14)] z-[9999] print:hidden transition-all duration-200 ${
                                                 activeSummaryPanel === row.id
                                                     ? 'opacity-100 pointer-events-auto scale-100'
                                                     : 'opacity-0 pointer-events-none scale-95 group-hover/summaryrow:opacity-100 group-hover/summaryrow:pointer-events-auto group-hover/summaryrow:scale-100'
@@ -536,98 +617,74 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                                     title={c.label}
                                                     onClick={() => updateSummaryRow(row.id, { color: c.value })}
                                                     className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 flex-shrink-0 ${
-                                                        row.color === c.value ? 'border-slate-900 scale-110' : 'border-white shadow-sm'
+                                                        row.color === c.value ? 'border-slate-900 scale-110 ring-2 ring-offset-1 ring-slate-400' : 'border-white shadow-sm'
                                                     }`}
                                                     style={{ backgroundColor: c.value }}
                                                 />
                                             ))}
 
-                                            {/* Divider */}
                                             <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
 
-                                            {/* Bold Toggle */}
+                                            {/* Bold */}
                                             <button
                                                 type="button"
                                                 title="Bold"
-                                                onClick={() => updateSummaryRow(row.id, { bold: !row.bold, thin: false })}
-                                                className={`w-7 h-7 rounded-lg text-[11px] font-black transition-all flex items-center justify-center border ${
-                                                    row.bold
-                                                        ? 'bg-slate-900 text-white border-slate-900'
-                                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                                onClick={() => updateSummaryRow(row.id, { bold: !row.bold, semiBold: false })}
+                                                className={`w-7 h-7 rounded-lg text-[12px] transition-all flex items-center justify-center border ${
+                                                    row.bold ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                                 }`}
-                                            >
-                                                B
-                                            </button>
+                                                style={{ fontWeight: 900 }}
+                                            >B</button>
 
-                                            {/* Thin Toggle */}
+                                            {/* Semi Bold */}
                                             <button
                                                 type="button"
-                                                title="Thin / Light"
-                                                onClick={() => updateSummaryRow(row.id, { thin: !row.thin, bold: false })}
-                                                className={`w-7 h-7 rounded-lg text-[11px] transition-all flex items-center justify-center border ${
-                                                    row.thin
-                                                        ? 'bg-slate-200 text-slate-700 border-slate-300'
-                                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                                title="Semi Bold"
+                                                onClick={() => updateSummaryRow(row.id, { semiBold: !row.semiBold, bold: false })}
+                                                className={`w-7 h-7 rounded-lg text-[12px] transition-all flex items-center justify-center border ${
+                                                    row.semiBold ? 'bg-slate-600 text-white border-slate-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                                 }`}
-                                                style={{ fontWeight: 300 }}
-                                            >
-                                                T
-                                            </button>
+                                                style={{ fontWeight: 600 }}
+                                            >S</button>
+
+                                            <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
+
+                                            {/* QR Scanner toggle */}
+                                            <button
+                                                type="button"
+                                                title={row.scannerAmount ? 'Remove from QR scanner' : 'Use this amount in QR scanner'}
+                                                onClick={() => {
+                                                    const updated = summaryRows.map(r =>
+                                                        r.id === row.id
+                                                            ? { ...r, scannerAmount: !r.scannerAmount }
+                                                            : { ...r, scannerAmount: false }
+                                                    );
+                                                    updateSummaryRows(updated);
+                                                }}
+                                                className={`w-7 h-7 rounded-lg text-[10px] font-black transition-all flex items-center justify-center border ${
+                                                    row.scannerAmount
+                                                        ? 'bg-indigo-600 text-white border-indigo-700'
+                                                        : 'bg-white text-indigo-500 border-indigo-200 hover:bg-indigo-50'
+                                                }`}
+                                            >QR</button>
 
                                             {/* Delete */}
                                             <button
                                                 type="button"
                                                 title="Delete row"
                                                 onClick={() => { deleteSummaryRow(row.id); setActiveSummaryPanel(null); }}
-                                                className="w-7 h-7 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center border bg-red-50 text-red-500 border-red-200 hover:bg-red-100"
-                                            >
-                                                ×
-                                            </button>
+                                                className="w-7 h-7 rounded-lg text-[13px] font-bold transition-all flex items-center justify-center border bg-red-50 text-red-500 border-red-200 hover:bg-red-100"
+                                            >×</button>
                                         </div>
                                     )}
-
-                                    {/* Label Input */}
-                                    <input
-                                        type="text"
-                                        value={row.label}
-                                        onChange={e => updateSummaryRow(row.id, { label: e.target.value })}
-                                        placeholder="Label..."
-                                        className="bg-transparent border-none outline-none text-right w-full uppercase tracking-wide"
-                                        style={{
-                                            fontSize: '11px',
-                                            color: row.color || '#0f172a',
-                                            fontWeight: row.bold ? 900 : row.thin ? 300 : 700,
-                                            cursor: isEditable ? 'text' : 'default',
-                                            pointerEvents: isEditable ? 'auto' : 'none',
-                                        }}
-                                        readOnly={!isEditable}
-                                        onClick={e => e.stopPropagation()}
-                                    />
-                                </td>
-                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center leading-none">
-                                    <input
-                                        type="text"
-                                        value={row.value}
-                                        onChange={e => updateSummaryRow(row.id, { value: e.target.value })}
-                                        placeholder="Value..."
-                                        className="bg-transparent border-none outline-none text-center w-full"
-                                        style={{
-                                            fontSize: '12px',
-                                            color: row.color || '#0f172a',
-                                            fontWeight: row.bold ? 900 : row.thin ? 300 : 700,
-                                            cursor: isEditable ? 'text' : 'default',
-                                            pointerEvents: isEditable ? 'auto' : 'none',
-                                        }}
-                                        readOnly={!isEditable}
-                                        onClick={e => e.stopPropagation()}
-                                    />
                                 </td>
                             </tr>
-                        ))}
+                            );
+                        })}
 
-                        {/* + Add Row Button */}
+                        {/* + Add Row Button — ignored by html2canvas so never appears in PDF */}
                         {isEditable && (
-                            <tr className="print:hidden">
+                            <tr data-html2canvas-ignore="true" className="print:hidden">
                                 <td colSpan={8} className="border-[1.5px] border-slate-900 py-2 px-4 text-center">
                                     <button
                                         type="button"
@@ -641,11 +698,10 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             </tr>
                         )}
 
+
                     </tbody>
                 </table>
 
-                {/* Mobile Card View (Hidden on Desktop & Print) */}
-                <div className="md:hidden print:hidden space-y-6 mb-8">
                 {/* Mobile Card View (Hidden on Desktop & Print) */}
                 <div className="md:hidden print:hidden space-y-6 mb-8">
                     {quote.items.map((i, idx) => (
@@ -733,7 +789,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         <span className="font-bold text-slate-900 uppercase leading-none">Magnific Home Appliances</span>
                                     </div>
                                     <div className="flex items-center text-[10px]">
-                                        <span className="w-28 font-black text-slate-500 uppercase tracking-widest leading-none">Bank &amp; Branch</span>
+                                        <span className="w-28 font-black text-slate-500 uppercase tracking-widest leading-none">Bank & Branch</span>
                                         <span className="font-bold text-slate-900 uppercase leading-none">Axis Bank Gottigere </span>
                                     </div>
                                     <div className="flex items-center text-[10px]">
@@ -751,11 +807,33 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             <div className="w-full md:w-56 print:w-48 flex-shrink-0 flex flex-col items-start">
                                 <h4 className="text-[10px] font-black text-indigo-700 border-b-2 border-indigo-700 pb-2 mb-4 uppercase tracking-[0.2em] w-full text-left">Secure UPI Payment</h4>
                                 <div className="text-left w-full flex flex-col items-start">
-                                    <UPIScanner
-                                        amount={0}
-                                        quotationId={quote.id || 'NEW'}
-                                        customerName={quote.customer.name}
-                                    />
+                                    {(() => {
+                                        const scannerRow = summaryRows.find(r => r.scannerAmount);
+                                        const rawVal = scannerRow?.value ?? '';
+                                        // Strip ₹, commas, spaces then parse
+                                        const numericAmount = Math.round(
+                                            parseFloat(rawVal.replace(/[₹,\s]/g, '')) || 0
+                                        );
+                                        return (
+                                            <>
+                                                {scannerRow && (
+                                                    <p className="text-[8px] text-slate-500 font-bold uppercase mb-4 print:hidden">
+                                                        Scan to pay balance: <span className="text-indigo-600">₹{numericAmount.toLocaleString('en-IN')}</span>
+                                                    </p>
+                                                )}
+                                                {!scannerRow && isEditable && (
+                                                    <p className="text-[8px] text-slate-400 font-medium mb-2 italic print:hidden">
+                                                        Tap <span className="font-black text-indigo-500">QR</span> on a row to set scanner amount
+                                                    </p>
+                                                )}
+                                                <UPIScanner
+                                                    amount={numericAmount}
+                                                    quotationId={quote.id || 'NEW'}
+                                                    customerName={quote.customer.name}
+                                                />
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>

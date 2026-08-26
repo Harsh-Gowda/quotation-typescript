@@ -500,48 +500,28 @@ export default function App() {
     });
   };
 
-  // Generate quotation ID in format: PREFIX-COUNTER-DISCOUNT[-F] (e.g. MSHA-01-12-F)
+  // Generate quotation ID in format: PREFIX-COUNTER-DISCOUNT[-F] (e.g. MSHA-05-12-F)
   // PREFIX is 'M' + uppercase first three letters of user's name (e.g., MSHA for Sharmila).
-  // COUNTER is today's daily sequential number padded to 2 digits — resets each day.
+  // COUNTER is a continuous lifetime total of how many quotations this sales person has made
+  //   (does NOT reset per day — it always goes up).
   // DISCOUNT is the current global discount percentage.
-  // If the generated ID already exists (same number, different customer), a letter
-  // suffix (a, b, c…) is appended so that no quotation is ever overwritten.
+  // If the generated ID already exists, a letter suffix (a, b, c…) is appended.
   const generateQuotationId = (): string => {
     const userName = loggedInUser?.name || 'USR';
     const prefix = 'M' + userName.substring(0, 3).toUpperCase();
     const disc = Math.round(discountValue || 0);
     const gstSuffix = discountType === 'include' ? '-F' : '';
 
-    // Build today's date string in DDMMYY format (e.g. 100826 for 10 Aug 2026)
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const yy = String(now.getFullYear()).slice(-2);
-    const todayStr = `${dd}${mm}${yy}`; // e.g. "100826"
+    // Count ALL quotes ever created by this user (not just today)
+    const allUserQuotes = savedQuotes.filter(q => q.id.startsWith(`${prefix}-`));
 
-    // Only count quotes created TODAY by this user
-    // A quote is "today's" if its createdAt date matches today, OR if its ID
-    // already contains this user's prefix and today's date-slot counter pattern.
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayUserQuotes = savedQuotes.filter(q => {
-      if (!q.id.startsWith(`${prefix}-`)) return false;
-      // If createdAt is available, use it for a precise date comparison
-      if (q.createdAt) {
-        const createdDate = new Date(q.createdAt);
-        return createdDate >= todayStart;
-      }
-      // Fallback: check if the date field (human-readable) matches today
-      const todayHuman = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-      return q.date === todayHuman;
-    });
-
-    // Find the highest daily counter used today
+    // Find the highest counter ever used by this user
     let maxCounter = 0;
-    todayUserQuotes.forEach(q => {
+    allUserQuotes.forEach(q => {
       const parts = q.id.split('-');
       // parts[0] = prefix, parts[1] = counter (01, 02…), rest = discount/suffix
       if (parts.length >= 3) {
-        // Strip any letter suffix (e.g. '03a' → 3)
+        // Strip any trailing letter suffix (e.g. '03a' → 3)
         const num = parseInt(parts[1], 10);
         if (!isNaN(num) && num > maxCounter) maxCounter = num;
       }
@@ -565,19 +545,10 @@ export default function App() {
     return `${baseId}-${Date.now()}`;
   };
 
-  const getUpdatedEditId = (oldId: string): string => {
-    // oldId format: PREFIX-COUNTER-DISCOUNT[-F] (e.g. MKI-01-20 or MKI-01-20-F)
-    const parts = oldId.split('-');
-    if (parts.length >= 3) {
-      const prefix = parts[0];
-      const counter = parts[1]; // Keep the counter part exactly as it was
-      const disc = Math.round(discountValue || 0);
-      const gstSuffix = discountType === 'include' ? '-F' : '';
-      return `${prefix}-${counter}-${disc}${gstSuffix}`;
-    }
-    // Fallback if format is not recognized
-    return oldId;
-  };
+  // When editing, always keep the SAME original ID — never generate a new one.
+  // This ensures the upsert updates the existing row in Supabase instead of
+  // creating a duplicate with an altered discount/suffix.
+  const getUpdatedEditId = (oldId: string): string => oldId;
 
   const handleCreateQuotation = async () => {
     setIsGenerating(true);
@@ -917,6 +888,10 @@ export default function App() {
           table { page-break-inside: auto; border-collapse: collapse; }
           thead { display: table-header-group; }
           tr { page-break-inside: avoid; break-inside: avoid; }
+          /* Hide input placeholders in print */
+          input::placeholder { color: transparent !important; }
+          /* Hide interactive UI panel absolutely in print */
+          [data-print-hide="true"] { display: none !important; }
         }
         /* Hide scrollbar for gallery */
         .no-scrollbar::-webkit-scrollbar { display: none; }

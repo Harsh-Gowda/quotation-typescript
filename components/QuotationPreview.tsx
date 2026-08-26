@@ -89,32 +89,6 @@ export default function QuotationPreview({
                                 <span className="hidden sm:inline">Edit Data</span>
                             </button>
 
-                            {/* Center: Advance Payment */}
-                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 shadow-inner flex-1 min-w-0 max-w-xs">
-                                <div className="flex flex-col min-w-0 w-full">
-                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Advance Payment</span>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center">
-                                            <span className="text-slate-400 text-xs mr-0.5 shrink-0">₹</span>
-                                            <input
-                                                type="number"
-                                                value={finalQuote.advanceAmount || ''}
-                                                onChange={(e) => onUpdateCustomer?.({ advanceAmount: Number(e.target.value) })}
-                                                className="w-20 bg-transparent border-none outline-none text-sm font-bold text-indigo-600 p-0 focus:ring-0"
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                        <div className="w-px h-5 bg-slate-300 shrink-0"></div>
-                                        <input
-                                            type="date"
-                                            value={finalQuote.advanceDate || ''}
-                                            onChange={(e) => onUpdateCustomer?.({ advanceDate: e.target.value })}
-                                            className="w-[115px] bg-transparent border-none outline-none text-sm font-bold text-indigo-600 p-0 focus:ring-0"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Right: Action Buttons */}
                             <div className="flex items-center gap-2 shrink-0">
                                 {/* Save */}
