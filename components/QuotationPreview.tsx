@@ -1,5 +1,5 @@
 import React from 'react';
-import { Quotation, Customer } from '../types';
+import { Quotation, Customer, SummaryRow } from '../types';
 import { BackIcon, SaveIcon, ExcelIcon, CheckIcon } from './Icons';
 import QuotationSheet from './QuotationSheet';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +19,7 @@ interface QuotationPreviewProps {
     onReorderItems?: (fromIndex: number, toIndex: number) => void;
     onUpdateRoundOff?: (value: number) => void;
     onUpdateLabels?: (labels: Record<string, string>) => void;
+    onUpdateSummaryRows?: (rows: SummaryRow[]) => void;
     onNewQuote: () => void;
     isPublicMode: boolean;
     isCustomerView: boolean;
@@ -26,7 +27,7 @@ interface QuotationPreviewProps {
 }
 
 export default function QuotationPreview({
-    finalQuote, subtotal, isSaved, isSaving, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateRoundOff, onUpdateLabels, onNewQuote,
+    finalQuote, subtotal, isSaved, isSaving, onSave, onExportExcel, onEdit, onUpdateCustomer, onUpdateItemQuantity, onUpdateItemPlace, onUpdateItemSetting, onReorderItems, onUpdateRoundOff, onUpdateLabels, onUpdateSummaryRows, onNewQuote,
     isPublicMode, isCustomerView, viewOnly
 }: QuotationPreviewProps) {
     const navigate = useNavigate();
@@ -190,8 +191,7 @@ export default function QuotationPreview({
                     onUpdateItemPlace={viewOnly ? undefined : onUpdateItemPlace}
                     onUpdateItemSetting={viewOnly ? undefined : onUpdateItemSetting}
                     onReorderItems={viewOnly ? undefined : onReorderItems}
-                    onUpdateRoundOff={viewOnly ? undefined : onUpdateRoundOff}
-                    onUpdateLabels={viewOnly ? undefined : onUpdateLabels}
+                    onUpdateSummaryRows={viewOnly ? undefined : onUpdateSummaryRows}
                 />
             </div>
         </div>

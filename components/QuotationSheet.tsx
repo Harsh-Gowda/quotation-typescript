@@ -646,224 +646,15 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
 
                 {/* Mobile Card View (Hidden on Desktop & Print) */}
                 <div className="md:hidden print:hidden space-y-6 mb-8">
-                                    <>
-                                        {/* EXCLUDE FLOW: Gross -> Discount -> Net -> GST -> Final */}
-                                        {quote.globalDiscountValue ? (
-                                            <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                                <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('discount1', e.currentTarget.textContent || 'discount')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none outline-none focus:bg-slate-50">
-                                                    {labels.discount1}
-                                                </td>
-                                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-blue-600 leading-none">
-                                                    - {totalDiscountAmount.toLocaleString('en-IN')}
-                                                </td>
-                                            </tr>
-                                        ) : null}
-                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
-                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
-                                                {Math.round(gstBase * 0.18).toLocaleString('en-IN')}
-                                            </td>
-                                        </tr>
-                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                            <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('netTotal', e.currentTarget.textContent || 'Net Total')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none outline-none focus:bg-slate-50">
-                                                {labels.netTotal}
-                                            </td>
-                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
-                                                {(totalPrice(quote.items) - totalDiscountAmount).toLocaleString('en-IN')}
-                                            </td>
-                                        </tr>
-                                    </>
-                                ) : quote.globalDiscountType === 'include' ? (
-                                    <>
-                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                            <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('netTotalInc', e.currentTarget.textContent || 'Net Total (Inc. 18% GST)')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-900 uppercase leading-none outline-none focus:bg-slate-50">
-                                                {labels.netTotalInc}
-                                            </td>
-                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
-                                                {totalPrice(quote.items).toLocaleString('en-IN')}
-                                            </td>
-                                        </tr>
-                                        {quote.globalDiscountValue ? (
-                                            <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                                <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('discount2', e.currentTarget.textContent || 'discount')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-blue-600 uppercase leading-none outline-none focus:bg-slate-50">
-                                                    {labels.discount2}
-                                                </td>
-                                                <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-blue-600 leading-none">
-                                                    - {totalDiscountAmount.toLocaleString('en-IN')}
-                                                </td>
-                                            </tr>
-                                        ) : null}
-                                    </>
-                                ) : (
-                                    <>
-                                        {/* DEFAULT FLOW (No discount): Gross -> GST -> Final */}
-                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">GST @18%</td>
-                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">
-                                                {Math.round(gstBase * 0.18).toLocaleString('en-IN')}
-                                            </td>
-                                        </tr>
-                                    </>
-                                )}
-
-                                {quote.advanceAmount ? (
-                                    <>
-                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                            <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-800 uppercase leading-none">
-                                                Advance{quote.advanceDate ? ` (${formatAdvanceDate(quote.advanceDate)})` : ''}
-                                            </td>
-                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-900 leading-none">{quote.advanceAmount.toLocaleString('en-IN')}</td>
-                                        </tr>
-                                        <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                            <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('balanceAmount', e.currentTarget.textContent || 'Balance Amount')} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none outline-none focus:bg-slate-200">
-                                                {labels.balanceAmount}
-                                            </td>
-                                            <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
-                                                ₹{(() => {
-                                                    const totalNoTax = totalPrice(quote.items);
-                                                    const gstAmt = Math.round(gstBase * 0.18);
-
-                                                    const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                                    return (finalAmount - quote.advanceAmount!).toLocaleString('en-IN');
-                                                })()}
-                                            </td>
-                                        </tr>
-                                    </>
-                                ) : (
-                                    <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                        <td colSpan={7} contentEditable={isEditable} suppressContentEditableWarning={true} onBlur={(e) => updateLabel('balanceAmount', e.currentTarget.textContent || 'Balance Amount')} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none outline-none focus:bg-slate-200">
-                                            {labels.balanceAmount}
-                                        </td>
-                                        <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
-                                            ₹{(() => {
-                                                const totalNoTax = totalPrice(quote.items);
-                                                const gstAmt = Math.round(gstBase * 0.18);
-
-                                                const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                                return finalAmount.toLocaleString('en-IN');
-                                            })()}
-                                        </td>
-                                    </tr>
-                                )}
-
-                                {/* Round Off Row */}
-                                {!isCustomerView && (
-                                    <tr 
-                                        className={`group ${(!quote.manualRoundOff && !editingRoundOff) ? "print:hidden" : ""}`}
-                                        data-html2canvas-ignore={(!quote.manualRoundOff && !editingRoundOff) ? "true" : undefined}
-                                    >
-                                        <td colSpan={7} className="border-[1.5px] border-slate-900 py-2 px-4 text-right text-[11px] font-bold text-slate-600 uppercase leading-none">
-                                            Round Off
-                                        </td>
-                                        <td className="border-[1.5px] border-slate-900 py-2 px-2 text-center text-[12px] font-bold text-slate-700 leading-none relative">
-                                            {/* Floating Actions Bar */}
-                                            {isEditable && onUpdateRoundOff && (
-                                                <div className="absolute left-[calc(100%+8px)] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto flex flex-col items-center gap-2 p-2 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-[0_15px_40px_rgba(0,0,0,0.15)] z-[9999] print:hidden scale-95 group-hover:scale-100 origin-left after:content-[''] after:absolute after:-left-4 after:top-0 after:bottom-0 after:w-4 after:bg-transparent">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (quote.manualRoundOff) {
-                                                                onUpdateRoundOff(0);
-                                                            } else {
-                                                                const totalNoTax = totalPrice(quote.items);
-                                                                const gstAmt = Math.round(gstBase * 0.18);
-                                                                const baseFinalAmount = totalNoTax + gstAmt - totalDiscountAmount;
-                                                                const baseBalance = quote.advanceAmount ? Math.max(0, baseFinalAmount - quote.advanceAmount) : baseFinalAmount;
-                                                                const rounded = baseBalance > 100 ? Math.floor(baseBalance / 100) * 100 : baseBalance;
-                                                                onUpdateRoundOff(rounded);
-                                                            }
-                                                        }}
-                                                        className={`w-9 h-9 rounded-xl text-[10px] font-black transition-all flex flex-col items-center justify-center border shadow-sm ${quote.manualRoundOff
-                                                            ? 'bg-orange-600 text-white border-orange-700'
-                                                            : 'bg-white text-orange-600 border-orange-100 hover:bg-orange-50'
-                                                            }`}
-                                                        title="Round Off Toggle"
-                                                    >
-                                                        <span className="scale-75 text-[8px]">ROFF</span>
-                                                        <span className="text-[7px] mt-[-4px]">{quote.manualRoundOff ? 'ON' : 'OFF'}</span>
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            {isEditable && onUpdateRoundOff ? (
-                                                editingRoundOff ? (
-                                                    <input
-                                                        type="number"
-                                                        value={roundOffTemp}
-                                                        onChange={e => setRoundOffTemp(e.target.value)}
-                                                        onBlur={() => {
-                                                            onUpdateRoundOff(Number(roundOffTemp) || 0);
-                                                            setEditingRoundOff(false);
-                                                        }}
-                                                        onKeyDown={e => {
-                                                            if (e.key === 'Enter') { onUpdateRoundOff(Number(roundOffTemp) || 0); setEditingRoundOff(false); }
-                                                            if (e.key === 'Escape') setEditingRoundOff(false);
-                                                        }}
-                                                        className="w-20 text-center border-b-2 border-indigo-500 outline-none bg-transparent font-bold"
-                                                        autoFocus
-                                                        placeholder="0"
-                                                    />
-                                                ) : (
-                                                    <span
-                                                        className="cursor-pointer hover:bg-indigo-50 px-2 py-1 rounded inline-block"
-                                                        onClick={() => { setRoundOffTemp(String(quote.manualRoundOff ?? 0)); setEditingRoundOff(true); }}
-                                                        title="Click to edit round off"
-                                                    >
-                                                        {quote.manualRoundOff && quote.manualRoundOff !== 0 ? (
-                                                            <span className="text-indigo-700">
-                                                                ₹{quote.manualRoundOff.toLocaleString('en-IN')}
-                                                            </span>
-                                                        ) : <span className="text-slate-400 text-[10px]">+ click to add</span>}
-                                                    </span>
-                                                )
-                                            ) : (
-                                                <span className="text-indigo-700">
-                                                    ₹{(quote.manualRoundOff || 0).toLocaleString('en-IN')}
-                                                </span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                )}
-                            </>
-                        )}
-
-                        {isCustomerView && (
-                            <tr>
-                                <td colSpan={4} className="border-[1.5px] border-slate-900 py-3 px-4 text-right text-[12px] font-black text-slate-900 bg-slate-100 uppercase tracking-widest leading-none">Balance Amount
-</td>
-                                <td className="border-[1.5px] border-slate-900 py-3 px-2 text-center text-[11px] font-black text-indigo-700 bg-slate-100 leading-none whitespace-nowrap">
-                                    ₹{(() => {
-                                        const totalNoTax = totalPrice(quote.items);
-                                        const gstAmt = Math.round(gstBase * 0.18);
-                                        const baseFinalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                        const parsedRoundOff = Number(quote.manualRoundOff) || 0;
-                                        const baseBalance = quote.advanceAmount ? Math.max(0, baseFinalAmount - quote.advanceAmount) : baseFinalAmount;
-                                        const balanceDue = Math.max(0, baseBalance - parsedRoundOff);
-                                        return balanceDue.toLocaleString('en-IN');
-                                    })()}
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-
                 {/* Mobile Card View (Hidden on Desktop & Print) */}
                 <div className="md:hidden print:hidden space-y-6 mb-8">
                     {quote.items.map((i, idx) => (
                         <div key={idx} className="bg-white border rounded-xl shadow-sm overflow-hidden">
                             <div className="flex p-4 gap-4">
-                                {/* Image */}
                                 <div className="w-21 h-24 flex-shrink-0 bg-slate-50 rounded-lg flex items-center justify-center p-4 border overflow-hidden">
                                     {(i.customImage || i.product.image) ? (
-                                        <img
-                                            src={i.customImage || i.product.image}
-                                            className="w-full h-full object-contain transition-all duration-300"
-                                            alt={i.product.name}
-                                            style={i.showLineart ? {
-                                                filter: 'grayscale(1) contrast(1.8) brightness(1.2) invert(0)',
-                                                opacity: 0.85
-                                            } : {}}
-                                        />
+                                        <img src={i.customImage || i.product.image} className="w-full h-full object-contain" alt={i.product.name}
+                                            style={i.showLineart ? { filter: 'grayscale(1) contrast(1.8) brightness(1.2)', opacity: 0.85 } : {}} />
                                     ) : (
                                         <div className="w-full h-full flex flex-col items-center justify-center">
                                             <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -871,33 +662,21 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         </div>
                                     )}
                                 </div>
-                                {/* Header Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-start p-4">
                                         <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded uppercase tracking-wider">{i.customModelNumber || i.product.modelNumber}</span>
                                         <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
                                     </div>
                                     <h4 className="font-bold text-slate-900 text-sm mt-1 leading-tight">{i.customName || i.product.name}</h4>
-
                                     {!isCustomerView && (
                                         <div className="mt-3 flex flex-col space-y-2">
-                                            <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic border-l-2 border-indigo-200 pl-2 whitespace-pre-line">
-                                                {i.customDescription || i.product.description}
-                                            </p>
-                                            {i.extraNote && (
-                                                <p className="text-[10px] text-blue-600 font-bold leading-relaxed whitespace-pre-line bg-blue-50 p-2 rounded-lg">
-                                                    {i.extraNote}
-                                                </p>
-                                            )}
-                                            {i.placeName && (
-                                                <div className="text-slate-500 italic text-[10px] pt-1 border-t border-slate-100">{i.placeName}</div>
-                                            )}
+                                            <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic border-l-2 border-indigo-200 pl-2 whitespace-pre-line">{i.customDescription || i.product.description}</p>
+                                            {i.extraNote && <p className="text-[10px] text-blue-600 font-bold leading-relaxed whitespace-pre-line bg-blue-50 p-2 rounded-lg">{i.extraNote}</p>}
+                                            {i.placeName && <div className="text-slate-500 italic text-[10px] pt-1 border-t border-slate-100">{i.placeName}</div>}
                                         </div>
                                     )}
                                 </div>
                             </div>
-
-                            {/* Pricing Footer */}
                             <div className="bg-slate-50 px-4 py-3 border-t flex justify-between items-center text-xs">
                                 <div className="flex flex-col">
                                     <span className="text-[10px] text-slate-400 font-bold uppercase">Qty: {i.quantity}</span>
@@ -908,21 +687,13 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         const gDiscount = quote.globalDiscountValue || 0;
                                         const basePrice = i.customPrice !== undefined ? i.customPrice : i.product.price;
                                         const effectivePrice = i.includeGst !== false ? basePrice : basePrice / 1.18;
-
-                                        const appliesDisc = quote.globalDiscountType === 'exclude'
-                                            ? (i.includeDiscount !== false)
-                                            : (i.product.category !== 'Services' && i.includeDiscount !== false);
-                                        const discountedPrice = (quote.globalDiscountType && gDiscount > 0 && appliesDisc)
-                                            ? effectivePrice * (1 - gDiscount / 100)
-                                            : effectivePrice;
-
+                                        const appliesDisc = i.product.category !== 'Services' && i.includeDiscount !== false;
+                                        const discountedPrice = (quote.globalDiscountType && gDiscount > 0 && appliesDisc) ? effectivePrice * (1 - gDiscount / 100) : effectivePrice;
                                         return (
                                             <div className="flex flex-col items-end">
                                                 <span className="font-black text-indigo-700 text-base">₹{Math.round(discountedPrice * i.quantity).toLocaleString('en-IN')}</span>
                                                 {i.includeDiscount === false && i.product.category !== 'Services' && (
-                                                    <span className="text-[9px] text-red-600 font-bold uppercase mt-0.5 leading-none px-1 py-0.5 bg-red-50 rounded print:hidden">
-                                                        Disc Off
-                                                    </span>
+                                                    <span className="text-[9px] text-red-600 font-bold uppercase mt-0.5 leading-none px-1 py-0.5 bg-red-50 rounded print:hidden">Disc Off</span>
                                                 )}
                                             </div>
                                         );
@@ -932,110 +703,19 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                         </div>
                     ))}
 
-                    {/* Mobile Totals */}
-                    {!isCustomerView && (
+                    {/* Mobile Summary Rows */}
+                    {summaryRows.length > 0 && (
                         <div className="bg-slate-800 text-white rounded-xl p-4 space-y-2 text-xs">
-                            <div className="flex justify-between">
-                                <span className="text-slate-400">Gross Total</span>
-                                <span className="font-bold">{totalPrice(quote.items).toLocaleString('en-IN')}</span>
-                            </div>
-
-                            {quote.globalDiscountType === 'exclude' ? (
-                                <>
-                                    {quote.globalDiscountValue ? (
-                                        <div className="flex justify-between text-blue-400">
-                                            <span>discount</span>
-                                            <span className="font-bold">-{totalDiscountAmount.toLocaleString('en-IN')}</span>
-                                        </div>
-                                    ) : null}
-                                    <div className="flex justify-between">
-                                        <span className="text-slate-400">GST @18%</span>
-                                        <span className="font-bold">{Math.round(gstBase * 0.18).toLocaleString('en-IN')}</span>
-                                    </div>
-                                    <div className="flex justify-between border-t border-slate-700 pt-1">
-                                        <span className="text-slate-300">Net Total</span>
-                                        <span className="font-bold">{(totalPrice(quote.items) - totalDiscountAmount).toLocaleString('en-IN')}</span>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="flex justify-between">
-                                        <span className="text-slate-400">Net Total (Inc. 18% GST)</span>
-                                        <span className="font-bold">{totalPrice(quote.items).toLocaleString('en-IN')}</span>
-                                    </div>
-                                    {quote.globalDiscountValue ? (
-                                        <div className="flex justify-between text-blue-400">
-                                            <span>discount </span>
-                                            <span className="font-bold">-{totalDiscountAmount.toLocaleString('en-IN')}</span>
-                                        </div>
-                                    ) : null}
-                                </>
-                            )}
-
-                            {quote.advanceAmount ? (
-                                <>
-                                    <div className="flex justify-between">
-                                        <span className="text-slate-400">Advance ({quote.advanceDate || 'N/A'})</span>
-                                        <span className="font-bold">{quote.advanceAmount.toLocaleString('en-IN')}</span>
-                                    </div>
-                                    <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
-                                        <span className="font-bold uppercase tracking-wider">Balance Amount
-</span>
-                                        <span className="font-bold text-green-400">
-                                            ₹{(() => {
-                                                const totalNoTax = totalPrice(quote.items);
-                                                const gstAmt = Math.round(gstBase * 0.18);
-
-                                                const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                                return (finalAmount - quote.advanceAmount!).toLocaleString('en-IN');
-                                            })()}
-                                        </span>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="flex justify-between border-t border-slate-600 pt-2 text-sm">
-                                    <span className="font-bold uppercase tracking-wider">Balance Amount
-</span>
-                                    <span className="font-bold text-green-400">
-                                        ₹{(() => {
-                                            const totalNoTax = totalPrice(quote.items);
-                                            const gstAmt = Math.round(gstBase * 0.18);
-
-                                            const finalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                            return finalAmount.toLocaleString('en-IN');
-                                        })()}
+                            {summaryRows.map(row => (
+                                <div key={row.id} className="flex justify-between items-center">
+                                    <span style={{ color: row.color || '#cbd5e1', fontWeight: row.bold ? 900 : row.thin ? 300 : 600 }} className="uppercase tracking-wide text-[10px]">
+                                        {row.label || '—'}
+                                    </span>
+                                    <span style={{ color: row.color || '#ffffff', fontWeight: row.bold ? 900 : row.thin ? 300 : 700 }} className="text-sm">
+                                        {row.value || '—'}
                                     </span>
                                 </div>
-                            )}
-                            {/* Round Off - mobile */}
-                            {(quote.manualRoundOff !== undefined && quote.manualRoundOff !== 0) && (
-                                <div className="flex justify-between">
-                                    <span className="text-slate-400">Round Off</span>
-                                    <span className="font-bold text-indigo-400">
-                                        ₹{quote.manualRoundOff.toLocaleString('en-IN')}
-                                    </span>
-                                </div>
-                            )}
-                        </div>)}
-
-                    {isCustomerView && (
-                        <div className="bg-slate-800 text-white rounded-xl p-4 space-y-2 text-xs">
-                            <div className="flex justify-between items-center text-sm font-bold uppercase tracking-wider">
-                                <span>Balance Amount
-</span>
-                                <span className="text-green-400 text-lg">
-                                    ₹{(() => {
-                                        const totalNoTax = totalPrice(quote.items);
-                                        const gstAmt = Math.round(gstBase * 0.18);
-
-                                        const baseFinalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                        const parsedRoundOff = Number(quote.manualRoundOff) || 0;
-                                        const baseBalance = quote.advanceAmount ? Math.max(0, baseFinalAmount - quote.advanceAmount) : baseFinalAmount;
-                                        const balanceDue = Math.max(0, baseBalance - parsedRoundOff);
-                                        return balanceDue.toLocaleString('en-IN');
-                                    })()}
-                                </span>
-                            </div>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -1053,7 +733,7 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                                         <span className="font-bold text-slate-900 uppercase leading-none">Magnific Home Appliances</span>
                                     </div>
                                     <div className="flex items-center text-[10px]">
-                                        <span className="w-28 font-black text-slate-500 uppercase tracking-widest leading-none">Bank & Branch</span>
+                                        <span className="w-28 font-black text-slate-500 uppercase tracking-widest leading-none">Bank &amp; Branch</span>
                                         <span className="font-bold text-slate-900 uppercase leading-none">Axis Bank Gottigere </span>
                                     </div>
                                     <div className="flex items-center text-[10px]">
@@ -1070,27 +750,13 @@ export default function QuotationSheet({ quote, subtotal, isCustomerView, isEdit
                             {/* UPI Column */}
                             <div className="w-full md:w-56 print:w-48 flex-shrink-0 flex flex-col items-start">
                                 <h4 className="text-[10px] font-black text-indigo-700 border-b-2 border-indigo-700 pb-2 mb-4 uppercase tracking-[0.2em] w-full text-left">Secure UPI Payment</h4>
-                                {(() => {
-                                    const totalNoTax = totalPrice(quote.items);
-                                    const gstAmt = Math.round(gstBase * 0.18);
-                                    const baseFinalAmount = (totalNoTax + gstAmt - totalDiscountAmount);
-                                    
-                                    // The manual round off is the exact final amount the customer should pay.
-                                    const parsedRoundOff = Number(quote.manualRoundOff) || 0;
-                                    const baseBalance = quote.advanceAmount ? Math.max(0, baseFinalAmount - quote.advanceAmount) : baseFinalAmount;
-                                    const balanceDue = parsedRoundOff !== 0 ? parsedRoundOff : baseBalance;
-
-                                    return (
-                                        <div className="text-left w-full flex flex-col items-start">
-                                            <p className="text-[8px] text-slate-500 font-bold uppercase mb-4">Scan to pay balance: <span className="text-indigo-600">₹{Math.round(balanceDue).toLocaleString('en-IN')}</span></p>
-                                            <UPIScanner
-                                                amount={Math.round(balanceDue)}
-                                                quotationId={quote.id || 'NEW'}
-                                                customerName={quote.customer.name}
-                                            />
-                                        </div>
-                                    );
-                                })()}
+                                <div className="text-left w-full flex flex-col items-start">
+                                    <UPIScanner
+                                        amount={0}
+                                        quotationId={quote.id || 'NEW'}
+                                        customerName={quote.customer.name}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

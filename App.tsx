@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Customer, Product, QuoteItem, Quotation } from './types';
+import { Customer, Product, QuoteItem, Quotation, SummaryRow } from './types';
 import { DRAFT_STORAGE_KEY } from './constants';
 import * as XLSX from 'xlsx';
 import { totalPrice, computeGstBase, calculateTotalDiscount } from './utils';
@@ -693,6 +693,12 @@ export default function App() {
     setIsSaved(false);
   };
 
+  const handleUpdateSummaryRows = (rows: SummaryRow[]) => {
+    if (!finalQuote) return;
+    setFinalQuote({ ...finalQuote, summaryRows: rows });
+    setIsSaved(false);
+  };
+
   const handleUpdateLabels = (labels: Record<string, string>) => {
     if (!finalQuote) return;
     setFinalQuote({ ...finalQuote, customLabels: labels });
@@ -1012,6 +1018,7 @@ export default function App() {
                 onReorderItems={handleReorderQuoteItems}
                 onUpdateRoundOff={handleUpdateRoundOff}
                 onUpdateLabels={handleUpdateLabels}
+                onUpdateSummaryRows={handleUpdateSummaryRows}
                 onNewQuote={() => {
                   setCart([]);
                   setCustomer({ name: '', email: '', phone: '', address: '', company: '' });
