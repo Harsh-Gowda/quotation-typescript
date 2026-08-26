@@ -101,6 +101,19 @@ export default function App() {
     return localStorage.getItem(`${DRAFT_STORAGE_KEY}_isViewOnly`) === 'true';
   });
 
+  // Preserves summary rows, custom labels, advance info from the quote being edited.
+  // These fields are not part of the catalog flow so we carry them forward explicitly.
+  const [editingQuoteMeta, setEditingQuoteMeta] = useState<{
+    summaryRows?: any[];
+    customLabels?: Record<string, string>;
+    advanceAmount?: number;
+    advanceDate?: string;
+  }>(() => {
+    const raw = localStorage.getItem(`${DRAFT_STORAGE_KEY}_editingQuoteMeta`);
+    if (raw) { try { return JSON.parse(raw); } catch { return {}; } }
+    return {};
+  });
+
   // Load saved quotations from Supabase on mount
   const loadQuotations = useCallback(async () => {
     setIsLoadingQuotes(true);
@@ -131,7 +144,13 @@ export default function App() {
       localStorage.removeItem(`${DRAFT_STORAGE_KEY}_editingQuoteId`);
     }
     localStorage.setItem(`${DRAFT_STORAGE_KEY}_isViewOnly`, String(isViewOnly));
-  }, [customer, cart, discountType, discountValue, isEditMode, editingQuoteId, isViewOnly]);
+    // Persist editing meta so it survives page reload during the catalog step
+    if (isEditMode && Object.keys(editingQuoteMeta).length > 0) {
+      localStorage.setItem(`${DRAFT_STORAGE_KEY}_editingQuoteMeta`, JSON.stringify(editingQuoteMeta));
+    } else {
+      localStorage.removeItem(`${DRAFT_STORAGE_KEY}_editingQuoteMeta`);
+    }
+  }, [customer, cart, discountType, discountValue, isEditMode, editingQuoteId, isViewOnly, editingQuoteMeta]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -265,6 +284,7 @@ export default function App() {
     setCart([]);
     setDiscountType(null);
     setDiscountValue(0);
+    setEditingQuoteMeta({});
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_customer`);
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_cart`);
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_discountType`);
@@ -272,6 +292,7 @@ export default function App() {
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_isEditMode`);
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_editingQuoteId`);
     localStorage.removeItem(`${DRAFT_STORAGE_KEY}_isViewOnly`);
+    localStorage.removeItem(`${DRAFT_STORAGE_KEY}_editingQuoteMeta`);
   };
 
   /** Called by ProductModal after an image is successfully saved to Supabase.
@@ -565,11 +586,19 @@ export default function App() {
       date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
       taxRate: 0.18,
       aiSummary,
-      advanceAmount: customer.advanceAmount,
-      advanceDate: customer.advanceDate,
+      // When editing, restore advance info + custom labels/rows from the original quote
+      // (these fields are not part of the catalog flow so we carry them forward)
+      advanceAmount: isEditMode && editingQuoteMeta.advanceAmount !== undefined
+        ? editingQuoteMeta.advanceAmount
+        : customer.advanceAmount,
+      advanceDate: isEditMode && editingQuoteMeta.advanceDate !== undefined
+        ? editingQuoteMeta.advanceDate
+        : customer.advanceDate,
       globalDiscountType: discountType || undefined,
       globalDiscountValue: discountValue || undefined,
-      createdBy: loggedInUser?.name || 'Unknown'
+      createdBy: loggedInUser?.name || 'Unknown',
+      summaryRows: isEditMode ? (editingQuoteMeta.summaryRows ?? undefined) : undefined,
+      customLabels: isEditMode ? (editingQuoteMeta.customLabels ?? undefined) : undefined,
     };
 
     setFinalQuote(quote);
@@ -583,10 +612,22 @@ export default function App() {
     if (!finalQuote) return;
 
     // Load quotation data into state
-    setCustomer(finalQuote.customer);
+    setCustomer({
+      ...finalQuote.customer,
+      advanceAmount: finalQuote.advanceAmount || 0,
+      advanceDate: finalQuote.advanceDate || '',
+    });
     setCart(finalQuote.items);
     setDiscountType(finalQuote.globalDiscountType || null);
     setDiscountValue(finalQuote.globalDiscountValue || 0);
+
+    // Preserve fields that are not part of the catalog flow
+    setEditingQuoteMeta({
+      summaryRows: finalQuote.summaryRows,
+      customLabels: finalQuote.customLabels,
+      advanceAmount: finalQuote.advanceAmount,
+      advanceDate: finalQuote.advanceDate,
+    });
 
     // Set edit mode
     setIsEditMode(true);
@@ -1033,10 +1074,21 @@ export default function App() {
                 navigate('/preview');
               }}
               onEdit={(q) => {
-                setCustomer(q.customer);
+                setCustomer({
+                  ...q.customer,
+                  advanceAmount: q.advanceAmount || 0,
+                  advanceDate: q.advanceDate || '',
+                });
                 setCart(q.items);
                 setDiscountType(q.globalDiscountType || null);
                 setDiscountValue(q.globalDiscountValue || 0);
+                // Preserve fields not present in the catalog flow
+                setEditingQuoteMeta({
+                  summaryRows: q.summaryRows,
+                  customLabels: q.customLabels,
+                  advanceAmount: q.advanceAmount,
+                  advanceDate: q.advanceDate,
+                });
                 setIsEditMode(true);
                 setEditingQuoteId(q.id);
                 setIsViewOnly(false);
