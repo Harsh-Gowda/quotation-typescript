@@ -566,10 +566,20 @@ export default function App() {
     return `${baseId}-${Date.now()}`;
   };
 
-  // When editing, always keep the SAME original ID — never generate a new one.
-  // This ensures the upsert updates the existing row in Supabase instead of
-  // creating a duplicate with an altered discount/suffix.
-  const getUpdatedEditId = (oldId: string): string => oldId;
+  // When editing, rebuild the ID with the NEW discount/suffix while keeping
+  // the original prefix and counter segment. This ensures the upsert updates
+  // the existing row in Supabase and the displayed ID reflects the new discount.
+  const getUpdatedEditId = (oldId: string): string => {
+    // ID format: PREFIX-COUNTER-DISCOUNT[-F]  e.g. MSHA-05-12-F
+    // We want to swap only the DISCOUNT (and optional -F suffix) parts.
+    const parts = oldId.split('-');
+    // parts[0] = prefix (e.g. MSHA), parts[1] = counter (e.g. 05)
+    // everything from parts[2] onward is the discount+suffix (may be split by '-')
+    if (parts.length < 2) return oldId; // unexpected format, keep as-is
+    const disc = Math.round(discountValue || 0);
+    const gstSuffix = discountType === 'include' ? '-F' : '';
+    return `${parts[0]}-${parts[1]}-${disc}${gstSuffix}`;
+  };
 
   const handleCreateQuotation = async () => {
     setIsGenerating(true);
